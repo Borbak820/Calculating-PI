@@ -62,6 +62,7 @@ void vApplicationIdleHook( void )
 	
 }
 
+
 int main(void)
 {
 	vInitClock();
@@ -70,9 +71,8 @@ int main(void)
 	evButtonEvents = xEventGroupCreate();
 	/*
 	xTaskCreate(vInterface, (const char*) "Interface-Task", configMINIMAL_STACK_SIZE+100, NULL, 2, &InterfaceTask);*/
-	xTaskCreate(vLeibniz, (const char *) "Leibniz-Folge-Task", configMINIMAL_STACK_SIZE+300, NULL, 1, &LeibnizTask);/*
-	xTaskCreate(vNilakantha, (const char *) "Nilakantha-Folge-Task", configMINIMAL_STACK_SIZE+10, NULL, 1, NULL);*/
-
+	xTaskCreate(vLeibniz, (const char *) "Leibniz-Folge-Task", configMINIMAL_STACK_SIZE+300, NULL, 1, &LeibnizTask);
+	xTaskCreate(vNilakantha, (const char *) "Nilakantha-Folge-Task", configMINIMAL_STACK_SIZE+300, NULL, 1, NULL);
 
 	vTaskStartScheduler();
 
@@ -80,34 +80,32 @@ int main(void)
 }
 
 	
-	//Interface-Task
-	void vInterface(void *pvParameter){
-		(void) pvParameter;
-		for(;;){
-			vDisplayClear();
+//Interface-Task
+void vInterface(void *pvParameter){
+	(void) pvParameter;
+	for(;;){
+		vDisplayClear();
 			
-			vTaskDelay(1000);
-		}
+		vTaskDelay(1000);
 	}
+}
 
 
-	//Leibniz-Folge-Task
-	void vLeibniz(void *pvParameter){
-		(void) pvParameter;
-			long int i;
-			int n = 10000;
-			double Summe = 0.0;
-			double Term;
-			double Zaehler;
-			double Nenner;
-				//Leibniz Serie
-				for(i = 0; i < n; i ++){	
-					Zaehler = pow(-1, i);				//pow Toggelt zwischen -1 und +1
-					Nenner = 2*i+1;						
-					Term = Zaehler / Nenner;
-					Summe = Summe + Term;
-					PI = 4 * Summe;
-	
+//Leibniz-Folge-Task
+void vLeibniz(void *pvParameter){
+	(void) pvParameter;
+	long int i;
+	int n = 10000;
+	double Summe = 0.0;
+	double Term;
+	double Zaehler;
+	double Nenner;
+	for(i = 0; i < n; i ++){	
+		Zaehler = pow(-1, i);							//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
+		Nenner = 2*i+1;						
+		Term = Zaehler / Nenner;
+		Summe = Summe + Term;
+		PI = 4 * Summe;
 		char str[100];
 		int PIint1 = PI;											// Ganzzahl ermitteln
 		float PIkomma = PI - PIint1;								// Die ersten vier Kommastellen ermitteln als float
@@ -124,50 +122,25 @@ int main(void)
 		vDisplayWriteStringAtPos(1,0,"Pi ist %s", str);					
 		vTaskDelay(400 / portTICK_RATE_MS);
 		}
-				}
+}
 		
 	
-	
-	
-	
-	
 
 
-/*
-//Nilakantha-Folge-Task				?=3+4/(2·3·4)-4/(4·5·6)+4/(6·7·8)-4/(8·9·10)+4/(10·11·12)-4/(12·13·14)
+//Nilakantha-Folge-Task				PI=3+4/(2·3·4)-4/(4·5·6)+4/(6·7·8)-4/(8·9·10)+4/(10·11·12)-4/(12·13·14)...
 void vNilakantha(void *pvParameter){
 	(void) pvParameter;
-	double calculatePI(double PI, double n,
-	double sign)
-	{
-		// Add for 1000000 terms
-		for (int i = 0; i <= 1000000; i++) {
-			PI = PI + (sign * (4 / ((n) * (n + 1)
-			* (n + 2))));
-			
-			// Addition and subtraction
-			// of alternate sequences
-			sign = sign * (-1);
-			
-			// Increment by 2 according to formula
-			n += 2;
+	long int i;
+	int n = 10000;
+	double Summe = 0.0;
+	double Term;
+	double Zaehler = 1;
+	double Nenner;
+	for (int i = 0; i < n; i++) {
+		PI = PI + (Zaehler * (4 / ((n) * (n + 1) * (n + 2))));
+		Zaehler = pow(-1, i);
+		n += 2;
 		}
-		
-		// Return the value of Pi
-		return PI;
 	}
 
-	// Driver code
-	void main()
-	{
-		
-		// Initialise sum=3, n=2, and sign=1
-		double PI = 3, n = 2, sign = 1;
-		
-		// Function call
-		printf("The approximation of Pi is %0.8lf\n",calculatePI(PI, n, sign));
-	}
 
-	
-}
-*/
