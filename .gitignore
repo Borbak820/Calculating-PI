@@ -60,5 +60,3 @@ dkms.conf
 *.map
 *.srec
 
-#User Specific Files
-*.atsuo
