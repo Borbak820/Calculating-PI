@@ -73,12 +73,11 @@ int main(void)
 
 	evButtonEvents = xEventGroupCreate();
 
-	xTaskCreate(vInterface, (const char*) "Interface-Task", configMINIMAL_STACK_SIZE+100, NULL, 2, &InterfaceTask);
-	xTaskCreate(vLeibniz, (const char *) "Leibniz-Folge-Task", configMINIMAL_STACK_SIZE+300, NULL, 1, &LeibnizTask);
-	xTaskCreate(vNikalantha, (const char *) "Nikalantha-Folge-Task", configMINIMAL_STACK_SIZE+300, NULL, 1, &NikalanthaTask);
+	xTaskCreate(vInterface, (const char*) "Interface-Task", configMINIMAL_STACK_SIZE+300, NULL, 2, &InterfaceTask);
+	xTaskCreate(vLeibniz, (const char *) "Leibniz-Folge-Task", configMINIMAL_STACK_SIZE+100, NULL, 1, &LeibnizTask);
+	xTaskCreate(vNikalantha, (const char *) "Nikalantha-Folge-Task", configMINIMAL_STACK_SIZE+100, NULL, 1, &NikalanthaTask);
 
 	vTaskStartScheduler();
-
 	return 0;
 }
 
@@ -87,10 +86,10 @@ int main(void)
 void vInterface(void *pvParameter){
 	(void) pvParameter;
 	TickType_t xLastWakeTime;
-	const TickType_t xFrequency = 500;
+	const TickType_t xFrequency = 500;											//Zeitparameter für Interface-Task-Delay
 	xLastWakeTime = xTaskGetTickCount();
 	for(;;){
-		vTaskDelayUntil( &xLastWakeTime, xFrequency );
+		vTaskDelayUntil( &xLastWakeTime, xFrequency );							// TaskDelay
 		vDisplayClear();														// Löschen des ganzen Displays
 		vDisplayWriteStringAtPos(0,0,"Nikalantha-Serie");						// Ausgabe auf das Display
 		vDisplayWriteStringAtPos(1,0,"Pi ist %s", NikaString);					// Nikalantha's PI	
@@ -112,11 +111,9 @@ void vLeibniz(void *pvParameter){
 	double Nenner;
 	for(i = 0; i < n; i ++){	
 		Zaehler = pow(-1, i);													//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
-		Nenner = 2*i+1;						
-		Term = Zaehler / Nenner;
-		Summe = Summe + Term;
+		Nenner = 2*i+1;
+		Summe += (Zaehler / Nenner);
 		PI = 4 * Summe;
-		char str[100];
 		int PIint1 = PI;														// Ganzzahl ermitteln
 		float PIkomma1 = PI - PIint1;											// Die ersten vier Kommastellen ermitteln als float
 		int PIint2 = PIkomma1 * 10000;											// Die ersten vier Kommastellen ermitteln als int
@@ -168,10 +165,3 @@ void vNikalantha(void *pvParameter){
 		}
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
-/*								TO DO:									*/
-/* - Remove vTasksuspend in Nika and Leibniz Task						*/
-/*																		*/
-//////////////////////////////////////////////////////////////////////////
-
