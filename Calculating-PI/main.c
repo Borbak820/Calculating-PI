@@ -62,12 +62,14 @@ char LeibnizString[20];
 int Menu = 0;
 double PILeibniz;
 long int iL = 0;
-
-	long int n = 1000000;																// Maximale Anzahl berechnungen
-	double Summe = 0.0;
-	double Zaehler = 0;
-	double Nenner = 0;
+long int n = 1000000;																// Maximale Anzahl berechnungen
+double Summe = 0.0;
+double ZaehlerL = 0;
+double Nenner = 0;
 double PINika;
+long int iN = 0;
+long int nN = 2;
+double ZaehlerN = -1;
 //PI = 3.14159265358979323846264338327950288419716939937510
 
 void vApplicationIdleHook(void)
@@ -103,11 +105,7 @@ void vInterface(void *pvParameter){
 	TickType_t xLastWakeTime = xTaskGetTickCount();
 	const TickType_t xFrequency = 500;													//Zeitparameter für Interface-Task-Delay
 	for(;;){
-		vDisplayClear();		/*													// Löschen des ganzen Displays
-		vDisplayWriteStringAtPos(0,0,"Nikalantha-Serie");								// Ausgabe auf das Display
-		vDisplayWriteStringAtPos(1,0,"Pi ist %s", NikalanthaString);					// Nikalantha's PI	
-		vDisplayWriteStringAtPos(2,0,"Leibniz-Serie");
-		vDisplayWriteStringAtPos(3,0,"Pi ist %s", LeibnizString);			*/			// Leibniz's PI
+		vDisplayClear();
 		vDisplayWriteStringAtPos(0,0, "Pi-Calculator");
 		vDisplayWriteStringAtPos(1,0, "1: Pi aus math.h");
 		vDisplayWriteStringAtPos(2,0, "2: Leibniz-Serie");
@@ -163,8 +161,9 @@ void vButton(void* pvParameters){
 					PILeibniz = 0;
 					iL = -1;
 					Summe = 0.0;
-					Zaehler = 0;
+					ZaehlerL = 0;
 					Nenner = 0;
+					sprintf(LeibnizString, " ");
 					vDisplayWriteStringAtPos(0,0, "Reset Calculation    ");
 					vDisplayWriteStringAtPos(1,0, "1: Start");
 					vDisplayWriteStringAtPos(1,10, "2: Stop");
@@ -196,10 +195,22 @@ void vButton(void* pvParameters){
 				}
 				if(getButtonPress(BUTTON2) == SHORT_PRESSED && Menu == 3){
 					vTaskSuspend(NikalanthaTask);
+					vDisplayClear();
 				}
 				if(getButtonPress(BUTTON3) == SHORT_PRESSED && Menu == 3){
+					vTaskSuspend(NikalanthaTask);
+					vDisplayClear();
+					vTaskDelay(500);
 					PINika = 0;
-					vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
+					iN = 0;
+					ZaehlerN = 0;
+					nN = 0;
+					sprintf(NikalanthaString, " ");
+					vDisplayWriteStringAtPos(0,0, "Reset Calculation    ");
+					vDisplayWriteStringAtPos(1,0, "1: Start");
+					vDisplayWriteStringAtPos(1,10, "2: Stop");
+					vDisplayWriteStringAtPos(2,0, "3: Reset");
+					vDisplayWriteStringAtPos(3,0, "4: --> Leibniz");
 				}
 				if(getButtonPress(BUTTON4) == SHORT_PRESSED && Menu == 3) {
 					vTaskSuspend(NikalanthaTask);
@@ -208,13 +219,14 @@ void vButton(void* pvParameters){
 				vTaskDelay(10/portTICK_RATE_MS);
 			}
 		}
-		if((getButtonPress(BUTTON3) == LONG_PRESSED && getButtonPress(BUTTON4) == LONG_PRESSED) || Menu == 4){
+		if(getButtonPress(BUTTON3) == LONG_PRESSED && getButtonPress(BUTTON4) == LONG_PRESSED){
 			vDisplayClear();
 			vTaskSuspend(InterfaceTask);
-			vTaskDelay(100);
+			vTaskDelay(250);
 			vDisplayWriteStringAtPos(1,0, "The cake is a lie!");		//Easteregg 
 			vDisplayWriteStringAtPos(2,0, "- 'GLaDOS'");
-			Menu = 4;
+			vTaskDelay(5000);
+			vTaskResume(InterfaceTask);
 		}
 		vTaskDelay(10/portTICK_RATE_MS);
 	}
@@ -224,9 +236,9 @@ void vButton(void* pvParameters){
 void vLeibniz(void *pvParameter){
 	(void) pvParameter;
 	for(iL = 0; iL < n; iL ++){	
-		Zaehler = pow(-1, iL);															//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
+		ZaehlerL = pow(-1, iL);															//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
 		Nenner = 2*iL+1;
-		Summe += (Zaehler / Nenner);
+		Summe += (ZaehlerL / Nenner);
 		PILeibniz = 4 * Summe;
 		int PIint1 = PILeibniz;															// Ganzzahl ermitteln
 		float PIkomma1 = PILeibniz - PIint1;											// Die ersten vier Kommastellen ermitteln als float
@@ -237,12 +249,9 @@ void vLeibniz(void *pvParameter){
 		float PIkomma4 = PIkomma3 * 10000;												// Die dritten vier Kommastellen ermitteln als float
 		float PIkomma5 = PIkomma4 - PIint3;												// Die dritten vier Kommastellen ermitteln als float
 		int PIint4 = PIkomma5 * 10000;													// Die dritten vier Kommastellen ermitteln als int
-		sprintf (LeibnizString, "PI ist %d.%d%d%d", PIint1, PIint2, PIint3, PIint4);			// Ganzzahl und Kommastellen in String einlesen	
-		
+		sprintf(LeibnizString, "PI ist %d.%d%d%d", PIint1, PIint2, PIint3, PIint4);		// Ganzzahl und Kommastellen in String einlesen	
 		vDisplayWriteStringAtPos(0,0, "%s", LeibnizString);
-		if(PILeibniz == 3.1415926535){													// Ermittlung für Anzahl Zyklen bis PI auf 6 Nachkommastellen genau ist
-			vTaskSuspend(LeibnizTask);
-		}
+
 	}
 }
 		
@@ -252,19 +261,16 @@ void vLeibniz(void *pvParameter){
 //Nilakantha-Folge-Task		PI=3 + 4/(2·3·4) - 4/(4·5·6) + 4/(6·7·8) - 4/(8·9·10) + 4/(10·11·12) - 4/(12·13·14)...
 void vNikalantha(void *pvParameter){
 	(void) pvParameter;
-	long int i = 0;
-	long int n = 2;
-	double Zaehler = -1;
-	if (i == 0){																	// Startwert PI = 3
+	if (iN == 0){																	// Startwert PI = 3
 		PINika = 3;
 	}
-	for (i = 0; i < n; i++){
-		Zaehler = pow(-1, i);														//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
-		PINika = PINika +(Zaehler * 4 / (n * (n + 1) * (n + 2)));
-		if (i == 0){																// Einstellung für den ersten Vorzeichen Toggle
-			Zaehler = -1;
+	for (iN = 0; iN < nN; iN++){
+		ZaehlerN = pow(-1, iN);														//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
+		PINika = PINika +(ZaehlerN * 4 / (nN * (nN + 1) * (nN + 2)));
+		if (iN == 0){																// Einstellung für den ersten Vorzeichen Toggle
+			ZaehlerN = -1;
 		}		
-		n += 2;
+		nN += 2;
 		int PIint1 = PINika;														// Ganzzahl ermitteln
 		float PIkomma1 = PINika - PIint1;											// Die ersten vier Kommastellen ermitteln als float
 		int PIint2 = PIkomma1 * 10000;												// Die ersten vier Kommastellen ermitteln als int
@@ -275,10 +281,10 @@ void vNikalantha(void *pvParameter){
 		float PIkomma5 = PIkomma4 - PIint3;											// Die dritten vier Kommastellen ermitteln als float
 		int PIint4 = PIkomma5 * 10000;												// Die dritten vier Kommastellen ermitteln als int
 		sprintf (NikalanthaString, "PI ist %d.%d%d%d", PIint1, PIint2, PIint3, PIint4);	// Ganzzahl und Kommastellen in String einlesen
-		
-			vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
-		if(PINika == 3.1415926535){													// Ermittlung für Anzahl Zyklen bis PI auf 6 Nachkommastellen genau ist
-		/*	vTaskSuspend(NikalanthaTask);*/
+		vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
+		if(PINika == 3.14159298957){
+			vTaskSuspend(NikalanthaTask);
+			vTaskResume(ButtonTask);
 		}
 	}
 }
