@@ -27,10 +27,9 @@
 #include "utils.h"
 #include "errorHandler.h"
 #include "NHD0420Driver.h"
-#include "math.h"
 #include "stdio.h"
-
 #include "avr_f64.h"
+
 #include "ButtonHandler.h"
 
 
@@ -43,6 +42,7 @@ void vButton(void * pvParameter);
 TaskHandle_t LeibnizTask;
 TaskHandle_t NikalanthaTask;
 TaskHandle_t InterfaceTask;
+TaskHandle_t ButtonTask;
 
 
 #define EVBUTTONS_S1	1<<0
@@ -56,13 +56,18 @@ TaskHandle_t InterfaceTask;
 #define EVBUTTONS_CLEAR	0xFF
 EventGroupHandle_t evButtonEvents;
 
-
 char NikalanthaString[20];
 char LeibnizString[20];
 
-double PILeibniz;
-double PINika;
 int Menu = 0;
+double PILeibniz;
+long int iL = 0;
+
+	long int n = 1000000;																// Maximale Anzahl berechnungen
+	double Summe = 0.0;
+	double Zaehler = 0;
+	double Nenner = 0;
+double PINika;
 //PI = 3.14159265358979323846264338327950288419716939937510
 
 void vApplicationIdleHook(void)
@@ -78,14 +83,16 @@ int main(void)
 
 	evButtonEvents = xEventGroupCreate();
 
-	xTaskCreate(vInterface, (const char*) "Interface-Task", configMINIMAL_STACK_SIZE+300, NULL, 2, &InterfaceTask);
-	xTaskCreate(vButton, (const char *) "control_tsk", configMINIMAL_STACK_SIZE+150, NULL, 3, NULL);
+	xTaskCreate(vInterface, (const char*) "Interface-Task", configMINIMAL_STACK_SIZE, NULL, 2, &InterfaceTask);
+	xTaskCreate(vButton, (const char *) "control_tsk", configMINIMAL_STACK_SIZE+150, NULL, 3, &ButtonTask);
 	xTaskCreate(vLeibniz, (const char *) "Leibniz-Folge-Task", configMINIMAL_STACK_SIZE+100, NULL, 1, &LeibnizTask);
 	xTaskCreate(vNikalantha, (const char *) "Nikalantha-Folge-Task", configMINIMAL_STACK_SIZE+100, NULL, 1, &NikalanthaTask);
+
 	vTaskSuspend(LeibnizTask);
 	vTaskSuspend(NikalanthaTask);
-
+	
 	vTaskStartScheduler();
+	
 	return 0;
 }
 
@@ -96,7 +103,7 @@ void vInterface(void *pvParameter){
 	TickType_t xLastWakeTime = xTaskGetTickCount();
 	const TickType_t xFrequency = 500;													//Zeitparameter für Interface-Task-Delay
 	for(;;){
-		vDisplayClear();			/*													// Löschen des ganzen Displays
+		vDisplayClear();		/*													// Löschen des ganzen Displays
 		vDisplayWriteStringAtPos(0,0,"Nikalantha-Serie");								// Ausgabe auf das Display
 		vDisplayWriteStringAtPos(1,0,"Pi ist %s", NikalanthaString);					// Nikalantha's PI	
 		vDisplayWriteStringAtPos(2,0,"Leibniz-Serie");
@@ -111,94 +118,103 @@ void vInterface(void *pvParameter){
 
 //Controller-Task
 void vButton(void* pvParameters){
+	vDisplayClear();
 	initButtons();
-	for(;;) {
+	for(;;){
 		updateButtons();
-		if(getButtonPress(BUTTON1) == SHORT_PRESSED){
-			vDisplayClear();
+		if(getButtonPress(BUTTON1) == SHORT_PRESSED || Menu == 1){
+			vTaskSuspend(InterfaceTask);
 			char pistring[12];
+			vDisplayClear();
 			sprintf(&pistring[0], "PI: %.8f", M_PI);
 			vDisplayWriteStringAtPos(0,0, "Pi aus math.h");
 			vDisplayWriteStringAtPos(1,0, "%s", pistring);
-			vDisplayWriteStringAtPos(3,0, "Back");
+			vDisplayWriteStringAtPos(3,0, "4: Back");
 			Menu = 1;
-			while(Menu == 1){
-				if(getButtonPress(BUTTON4) == SHORT_PRESSED) {
-					Menu = 0;
-				}
+			updateButtons();
+			if(getButtonPress(BUTTON4) == SHORT_PRESSED && Menu == 1){
+				Menu = 0;
+				vTaskResume(InterfaceTask);
 			}
 		}
-		if(getButtonPress(BUTTON2) == SHORT_PRESSED){
+		if(getButtonPress(BUTTON2) == SHORT_PRESSED || Menu == 2){
+			vTaskSuspend(InterfaceTask);
+			vTaskDelay(100);
 			vDisplayClear();
+			vDisplayWriteStringAtPos(0,0, "%s", LeibnizString);
 			vDisplayWriteStringAtPos(1,0, "1: Start");
 			vDisplayWriteStringAtPos(1,10, "2: Stop");
 			vDisplayWriteStringAtPos(2,0, "3: Reset");
-			vDisplayWriteStringAtPos(3,0, "4: Leibniz <--> Nikalantha");
+			vDisplayWriteStringAtPos(3,0, "4: --> Nikalantha");
 			Menu = 2;
 			while(Menu == 2){
-				if(getButtonPress(BUTTON1) == SHORT_PRESSED){
+				updateButtons();
+				if(getButtonPress(BUTTON1) == SHORT_PRESSED && Menu == 2){
 					vTaskResume(LeibnizTask);
 					vDisplayWriteStringAtPos(0,0, "%s", LeibnizString);
 				}
-				if(getButtonPress(BUTTON2) == SHORT_PRESSED){
+				if(getButtonPress(BUTTON2) == SHORT_PRESSED && Menu == 2){
 					vTaskSuspend(LeibnizTask);
-					vDisplayWriteStringAtPos(0,0, "%s", LeibnizString);
 				}
-				if(getButtonPress(BUTTON3) == SHORT_PRESSED){
+				if(getButtonPress(BUTTON3) == SHORT_PRESSED && Menu == 2){
+					vTaskSuspend(LeibnizTask);
+					vDisplayClear();
+					vTaskDelay(500);
 					PILeibniz = 0;
-					vDisplayWriteStringAtPos(0,0, "%s", LeibnizString);
+					iL = -1;
+					Summe = 0.0;
+					Zaehler = 0;
+					Nenner = 0;
+					vDisplayWriteStringAtPos(0,0, "Reset Calculation    ");
+					vDisplayWriteStringAtPos(1,0, "1: Start");
+					vDisplayWriteStringAtPos(1,10, "2: Stop");
+					vDisplayWriteStringAtPos(2,0, "3: Reset");
+					vDisplayWriteStringAtPos(3,0, "4: --> Nikalantha");
 				}
-				if(getButtonPress(BUTTON4) == SHORT_PRESSED) {
+				if(getButtonPress(BUTTON4) == SHORT_PRESSED && Menu == 2){
 					vTaskSuspend(LeibnizTask);
-					vTaskResume(InterfaceTask);
-					Menu = 0;
+					Menu = 3;
 				}
+				vTaskDelay(10/portTICK_RATE_MS);
 			}
 		}
-		if(getButtonPress(BUTTON3) == SHORT_PRESSED){
+		if(getButtonPress(BUTTON3) == SHORT_PRESSED || Menu == 3){
+			vTaskSuspend(InterfaceTask);
+			vTaskDelay(100);
+			vDisplayClear();
+			vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
 			vDisplayWriteStringAtPos(1,0, "1: Start");
 			vDisplayWriteStringAtPos(1,10, "2: Stop");
 			vDisplayWriteStringAtPos(2,0, "3: Reset");
-			vDisplayWriteStringAtPos(3,0, "4: Nikalantha <--> Leibniz");
-			Menu = 2;
-			while(Menu == 2){
-				if(getButtonPress(BUTTON1) == SHORT_PRESSED){
+			vDisplayWriteStringAtPos(3,0, "4: --> Leibniz");
+			Menu = 3;
+			while(Menu == 3){
+				updateButtons();
+				if(getButtonPress(BUTTON1) == SHORT_PRESSED && Menu == 3){
 					vTaskResume(NikalanthaTask);
 					vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
 				}
-				if(getButtonPress(BUTTON2) == SHORT_PRESSED){
+				if(getButtonPress(BUTTON2) == SHORT_PRESSED && Menu == 3){
 					vTaskSuspend(NikalanthaTask);
-					vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
 				}
-				if(getButtonPress(BUTTON3) == SHORT_PRESSED){
+				if(getButtonPress(BUTTON3) == SHORT_PRESSED && Menu == 3){
 					PINika = 0;
 					vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
 				}
-				if(getButtonPress(BUTTON4) == SHORT_PRESSED) {
+				if(getButtonPress(BUTTON4) == SHORT_PRESSED && Menu == 3) {
 					vTaskSuspend(NikalanthaTask);
-					vTaskResume(InterfaceTask);
-					Menu = 0;
-				}
+					Menu = 2;
+				}		
+				vTaskDelay(10/portTICK_RATE_MS);
 			}
 		}
-		if(getButtonPress(BUTTON4) == SHORT_PRESSED){
+		if((getButtonPress(BUTTON3) == LONG_PRESSED && getButtonPress(BUTTON4) == LONG_PRESSED) || Menu == 4){
 			vDisplayClear();
-			vDisplayWriteStringAtPos(1,0, "The cake is a lie!");
+			vTaskSuspend(InterfaceTask);
+			vTaskDelay(100);
+			vDisplayWriteStringAtPos(1,0, "The cake is a lie!");		//Easteregg 
 			vDisplayWriteStringAtPos(2,0, "- 'GLaDOS'");
-			vTaskDelay(500);
-			
-		}
-		if(getButtonPress(BUTTON1) == LONG_PRESSED){
-			
-		}
-		if(getButtonPress(BUTTON2) == LONG_PRESSED){
-			
-		}
-		if(getButtonPress(BUTTON3) == LONG_PRESSED){
-			
-		}
-		if(getButtonPress(BUTTON4) == LONG_PRESSED){
-			
+			Menu = 4;
 		}
 		vTaskDelay(10/portTICK_RATE_MS);
 	}
@@ -207,14 +223,9 @@ void vButton(void* pvParameters){
 //Leibniz-Folge-Task	PI = 4·(1 - (1/3) + (1/5) - (1/7) + (1/9) - (1/11) + (1/13)...)
 void vLeibniz(void *pvParameter){
 	(void) pvParameter;
-	long int i;
-	long int n = 1000000;																// Maximale Anzahl berechnungen
-	double Summe = 0.0;
-	double Zaehler;
-	double Nenner;
-	for(i = 0; i < n; i ++){	
-		Zaehler = pow(-1, i);															//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
-		Nenner = 2*i+1;
+	for(iL = 0; iL < n; iL ++){	
+		Zaehler = pow(-1, iL);															//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
+		Nenner = 2*iL+1;
 		Summe += (Zaehler / Nenner);
 		PILeibniz = 4 * Summe;
 		int PIint1 = PILeibniz;															// Ganzzahl ermitteln
@@ -226,7 +237,9 @@ void vLeibniz(void *pvParameter){
 		float PIkomma4 = PIkomma3 * 10000;												// Die dritten vier Kommastellen ermitteln als float
 		float PIkomma5 = PIkomma4 - PIint3;												// Die dritten vier Kommastellen ermitteln als float
 		int PIint4 = PIkomma5 * 10000;													// Die dritten vier Kommastellen ermitteln als int
-		sprintf (LeibnizString, "%d.%d%d%d", PIint1, PIint2, PIint3, PIint4);			// Ganzzahl und Kommastellen in String einlesen	
+		sprintf (LeibnizString, "PI ist %d.%d%d%d", PIint1, PIint2, PIint3, PIint4);			// Ganzzahl und Kommastellen in String einlesen	
+		
+		vDisplayWriteStringAtPos(0,0, "%s", LeibnizString);
 		if(PILeibniz == 3.1415926535){													// Ermittlung für Anzahl Zyklen bis PI auf 6 Nachkommastellen genau ist
 			vTaskSuspend(LeibnizTask);
 		}
@@ -261,9 +274,11 @@ void vNikalantha(void *pvParameter){
 		float PIkomma4 = PIkomma3 * 10000;											// Die dritten vier Kommastellen ermitteln als float
 		float PIkomma5 = PIkomma4 - PIint3;											// Die dritten vier Kommastellen ermitteln als float
 		int PIint4 = PIkomma5 * 10000;												// Die dritten vier Kommastellen ermitteln als int
-		sprintf (NikalanthaString, "%d.%d%d%d", PIint1, PIint2, PIint3, PIint4);	// Ganzzahl und Kommastellen in String einlesen
+		sprintf (NikalanthaString, "PI ist %d.%d%d%d", PIint1, PIint2, PIint3, PIint4);	// Ganzzahl und Kommastellen in String einlesen
+		
+			vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
 		if(PINika == 3.1415926535){													// Ermittlung für Anzahl Zyklen bis PI auf 6 Nachkommastellen genau ist
-			vTaskSuspend(NikalanthaTask);
+		/*	vTaskSuspend(NikalanthaTask);*/
 		}
 	}
 }
