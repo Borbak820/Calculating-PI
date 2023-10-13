@@ -39,13 +39,15 @@ void vNikalantha(void *pvParameter);
 void vUserInterface(void * pvParameter);
 void vButtonHandler(void* pvParameter);
 
-#define evStartLeibniz	1<<0	//1
-#define evStopLeibniz	1<<1	//2
-#define evStartNika		1<<2	//4
-#define evStopNika		1<<3	//8
-#define evStoppedLeibiz	1<<4	//16
-#define evStoppedNika	1<<5	//32
-#define evClear			0xFF
+#define evStartLeibniz		1<<0	//1
+#define evStopLeibniz		1<<1	//2
+#define evStartNika			1<<2	//4
+#define evStopNika			1<<3	//8
+#define evStoppedLeibniz	1<<4	//16
+#define evStoppedNika		1<<5	//32
+#define evResetLeibniz		1<<6	//64
+#define evResetNika			1<<7	//128
+#define evClear				0xFF
 EventGroupHandle_t evStartStopEvents;
 
 #define EVBUTTONS_S1	1<<0	//1
@@ -70,6 +72,7 @@ TickType_t Time;
 char NikalanthaString[20];
 char LeibnizString[20];
 char TimeStringL[20];
+char TimeStringN[20];
 
 int Menu = 0;
 double PILeibniz;
@@ -159,6 +162,7 @@ void vUserInterface(void* pvParameters){
 				vDisplayWriteStringAtPos(1,0, "1: Start");
 				vDisplayWriteStringAtPos(1,10, "2: Stop");
 				vDisplayWriteStringAtPos(2,0, "3: Reset");
+				vDisplayWriteStringAtPos(2,10, "%s", TimeStringN);
 				vDisplayWriteStringAtPos(3,0, "4: --> Leibniz");
 			}
 			if(Menu == 4){
@@ -175,15 +179,15 @@ void vUserInterface(void* pvParameters){
 			}
 		
 		//Buttons Start screen	
-		if(Menu == 0 && ButtonState == 16){
+		if(Menu == 0 && ButtonState == 1){
 			//Pi Demo screen
 			Menu = 1;
 		}
-		if(Menu == 0 && ButtonState == 32){
+		if(Menu == 0 && ButtonState == 2){
 			//Leibniz's Pi screen
 			Menu = 2;
 		}
-		if(Menu == 0 && ButtonState == 64){
+		if(Menu == 0 && ButtonState == 4){
 			//Nikalantha's Pi screen
 			Menu = 3;
 		}
@@ -195,23 +199,27 @@ void vUserInterface(void* pvParameters){
 		}
 		
 		//Buttons Leibniz's Pi screen		
-		if(Menu == 2 && ButtonState == 1){
+		if(Menu == 2 && ButtonState == 1 && EventState != 1){
 			//start Leibniz calculation
-			xEventGroupClearBits(evStartStopEvents, evClear);
-			xEventGroupSetBits(evStartStopEvents, evStartLeibniz);
+			vTaskResume(LeibnizTask);
+			xEventGroupClearBits(evStartStopEvents, EVBUTTONS_CLEAR);
+			EventState = xEventGroupSetBits(evStartStopEvents, evStartLeibniz);
+			xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState =  xEventGroupGetBits(evButtonEvents);
 			vTaskResume(LeibnizTask);
 		}
-		if(Menu == 2 && ButtonState == 2){
+		if(Menu == 2 && ButtonState == 2 && EventState == 1){
 			//stop Leibniz calculation
-			xEventGroupClearBits(evStartStopEvents, evClear);
-			EventState = xEventGroupGetBits(evStartStopEvents);
+			xEventGroupClearBits(evStartStopEvents, EVBUTTONS_CLEAR);
 			xEventGroupSetBits(evStartStopEvents, evStopLeibniz);
 			EventState = xEventGroupGetBits(evStartStopEvents);
-			EventState = xEventGroupGetBits(evStartStopEvents);
+			xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState =  xEventGroupGetBits(evButtonEvents);
 		}
-		if(Menu == 2 && ButtonState == 4){
+		if(Menu == 2 && ButtonState == 4 && (EventState == 1 || EventState == 18)){
 			//reset - set Leibniz calculation to 0
-			vTaskSuspend(LeibnizTask);
+			xEventGroupClearBits(evStartStopEvents, evClear);
+			EventState = xEventGroupSetBits(evStartStopEvents, evStopLeibniz);
 			PILeibniz = 0;
 			iL = -1;
 			Summe = 0.0;
@@ -220,39 +228,53 @@ void vUserInterface(void* pvParameters){
 			TicksL = 0;
 			sprintf(LeibnizString, " ");
 			sprintf(TimeStringL, " ");
+			xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState =  xEventGroupGetBits(evButtonEvents);
 		}
 		if(Menu == 2 && ButtonState == 8){
 			//stop Leibniz calculation and switch to Nikalantha calculation
 			vTaskSuspend(LeibnizTask);
 			Menu = 3;
-		}
-		if(Menu == 2 && EventState == 16){
-			Menu = 0;
-			ButtonState = 32;
+			EventState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState =  xEventGroupGetBits(evButtonEvents);
 		}
 		
 		//Buttons Nikalantha's Pi screen
-		if(Menu == 3 && ButtonState == 1){
+		if(Menu == 3 && ButtonState == 1 && EventState !=4){
 			//start Nikalantha calculation
 			vTaskResume(NikalanthaTask);
+			xEventGroupClearBits(evStartStopEvents, EVBUTTONS_CLEAR);
+			EventState = xEventGroupSetBits(evStartStopEvents, evStartNika);
+			xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState =  xEventGroupGetBits(evButtonEvents);
 		}
-		if(Menu == 3 && ButtonState == 2){
+		if(Menu == 3 && ButtonState == 2 && EventState == 4){
 			//stop Nikalantha calculation
-			vTaskSuspend(NikalanthaTask);
+			xEventGroupClearBits(evStartStopEvents, EVBUTTONS_CLEAR);
+			xEventGroupSetBits(evStartStopEvents, evStopNika);
+			EventState = xEventGroupGetBits(evStartStopEvents);
+			xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState =  xEventGroupGetBits(evButtonEvents);
 		}
-		if(Menu == 3 && ButtonState == 4){
+		if(Menu == 3 && ButtonState == 4 && (EventState == 4 || EventState == 40)){
 			//reset - set Nikalantha calculation to 0
-			vTaskSuspend(NikalanthaTask);
+			xEventGroupClearBits(evStartStopEvents, evClear);
+			EventState = xEventGroupSetBits(evStartStopEvents, evStopNika);
 			PINika = 0;
 			iN = 0;
 			ZaehlerN = 0;
 			nN = 0;
 			sprintf(NikalanthaString, " ");
+			sprintf(TimeStringN, " ");
+			xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState =  xEventGroupGetBits(evButtonEvents);
 		}
 		if(Menu == 3 && ButtonState == 8) {
 			//stop Nikalantha calculation and switch to Leibniz calculation
 			vTaskSuspend(NikalanthaTask);
 			Menu = 2;
+			EventState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState =  xEventGroupGetBits(evButtonEvents);
 		}
 		
 		//Buttons Easteregg screen
@@ -266,11 +288,22 @@ void vUserInterface(void* pvParameters){
 		}
 		if(EventState == 16){
 			xEventGroupClearBits(evStartStopEvents, evClear);
+			EventState = xEventGroupSetBits(evStartStopEvents, evResetLeibniz);
+			vTaskSuspend(LeibnizTask);
 			Menu = 2;
-			vTaskResume(ButtonTask);
 		}
+		if(EventState == 32 && Menu == 3){
+			xEventGroupClearBits(evStartStopEvents, evClear);
+			xEventGroupSetBits(evStartStopEvents, evStopNika);
+			xEventGroupSetBits(evStartStopEvents, evStoppedNika);
+			EventState = xEventGroupGetBits(evStartStopEvents);
+			xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+			ButtonState = xEventGroupGetBits(evButtonEvents);
+			vTaskSuspend(NikalanthaTask);
+			Menu = 3;
+		}		
 		vTaskDelay(10/portTICK_RATE_MS);
-	}		
+	}	
 }
 
 void vButtonHandler(void* pvParamter) {
@@ -310,14 +343,13 @@ void vButtonHandler(void* pvParamter) {
 //Leibniz-Folge-Task	PI = 4·(1 - (1/3) + (1/5) - (1/7) + (1/9) - (1/11) + (1/13)...)
 int vLeibniz(void *pvParameter){
 	(void) pvParameter;
-	for(iL = 0; iL < nL; iL ++){
-		uint32_t EventState = xEventGroupGetBits(evStartStopEvents);
-		
+	for(iL = 0; iL < nL; iL ++){EventState = xEventGroupGetBits(evStartStopEvents);
 		if(EventState == 2){
-			Time = xTaskGetTickCount() - Starttime;
-			xEventGroupClearBits(evStartStopEvents, evClear);
-			xEventGroupSetBits(evStartStopEvents, evStoppedLeibiz);
-			vTaskSuspend(LeibnizTask);
+			while(EventState == 2){
+				xEventGroupClearBits(evStartStopEvents, evClear);
+				xEventGroupSetBits(evStartStopEvents, evStoppedNika);
+				EventState = xEventGroupGetBits(evStartStopEvents);
+			}
 		}
 		Starttime  = xTaskGetTickCount();
 		ZaehlerL = pow(-1, iL);															// pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
@@ -350,7 +382,6 @@ int vLeibniz(void *pvParameter){
 void vNikalantha(void *pvParameter){
 	(void) pvParameter;
 	nN = 2;
-	TickType_t starttime = xTaskGetTickCount();
 	if (iN == 0){																	// Startwert PI = 3
 		PINika = 3;
 		ZaehlerN = pow(-1, iN);														//pow Toggelt zwischen -1 und +1 für Vorzeichen --> -1^i
@@ -359,6 +390,15 @@ void vNikalantha(void *pvParameter){
 		iN += 1;
 	}
 	for (iN = 1; iN < nN; iN++){
+		EventState = xEventGroupGetBits(evStartStopEvents);
+		if(EventState == 8){
+			while(EventState == 8){
+				xEventGroupClearBits(evStartStopEvents, evClear);
+				xEventGroupSetBits(evStartStopEvents, evStoppedNika);
+				EventState = xEventGroupGetBits(evStartStopEvents);
+			}
+		}
+		Starttime = xTaskGetTickCount();
 		ZaehlerN = pow(-1, iN);	
 		PINika = PINika +(ZaehlerN * 4 / (nN * (nN + 1) * (nN + 2)));
 		nN += 2;
@@ -372,9 +412,8 @@ void vNikalantha(void *pvParameter){
 		float PIkomma5 = PIkomma4 - PIint3;											// Die dritten vier Kommastellen ermitteln als float
 		int PIint4 = PIkomma5 * 10000;												// Die dritten vier Kommastellen ermitteln als int
 		sprintf(NikalanthaString, "PI ist %d.%d%d%d", PIint1, PIint2, PIint3, PIint4);	// Ganzzahl und Kommastellen in String einlesen
-		if((uint32_t)(PINika*100000 == 314159)){
-			TickType_t Time = xTaskGetTickCount() - starttime;
-			vTaskDelay(portMAX_DELAY);
-		}
+		Endtime = xTaskGetTickCount() - Starttime;
+		TicksN += Endtime;
+		sprintf(TimeStringN, "%d ms", TicksN);
 	}	
 }
