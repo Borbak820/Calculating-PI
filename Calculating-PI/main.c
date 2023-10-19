@@ -91,6 +91,7 @@ char NikalanthaString[20];
 char LeibnizString[20];
 char TimeStringL[20];
 char TimeStringN[20];
+char ExactTime[3];
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -167,6 +168,7 @@ void vUserInterface(void* pvParameters){
 			if(Menu == 2){	//Leibniz's Pi screen
 				vDisplayClear();
 				vDisplayWriteStringAtPos(0,0, "%s", LeibnizString);
+				vDisplayWriteStringAtPos(0,17, "%s", ExactTime);
 				vDisplayWriteStringAtPos(1,0, "1: Start");
 				vDisplayWriteStringAtPos(1,10, "2: Stop");
 				vDisplayWriteStringAtPos(2,0, "3: Reset");
@@ -176,6 +178,7 @@ void vUserInterface(void* pvParameters){
 			if(Menu == 3){	//Nikalantha's Pi screen
 				vDisplayClear();
 				vDisplayWriteStringAtPos(0,0, "%s", NikalanthaString);
+				vDisplayWriteStringAtPos(0,17, "%s", ExactTime);
 				vDisplayWriteStringAtPos(1,0, "1: Start");
 				vDisplayWriteStringAtPos(1,10, "2: Stop");
 				vDisplayWriteStringAtPos(2,0, "3: Reset");
@@ -262,8 +265,9 @@ void vUserInterface(void* pvParameters){
 					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
 					xEventGroupSetBits(evStartStopEvents, EV_RESET_LEIBNIZ);
 					Bits = xEventGroupGetBits(evStartStopEvents);
-					sprintf(LeibnizString, " ");
-					sprintf(TimeStringL, " ");
+					sprintf(&LeibnizString[0], " ");
+					sprintf(&TimeStringL[0], " ");
+					sprintf(&ExactTime[0], " ");
 					vTaskSuspend(LeibnizTask);
 				}
 				break;
@@ -324,8 +328,9 @@ void vUserInterface(void* pvParameters){
 						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
 						xEventGroupSetBits(evStartStopEvents, EV_RESET_NIKA);
 						Bits = xEventGroupGetBits(evStartStopEvents);
-						sprintf(NikalanthaString, " ");
-						sprintf(TimeStringN, " ");
+						sprintf(&NikalanthaString[0], " ");
+						sprintf(&TimeStringN[0], " ");
+						sprintf(&ExactTime[0], " ");
 						vTaskSuspend(NikalanthaTask);
 					}
 					break;
@@ -346,7 +351,7 @@ void vUserInterface(void* pvParameters){
 
 
 //////////////////////////////////////////////////////////////////////////
-//							Buttontask									//
+//							Button-Task									//
 //////////////////////////////////////////////////////////////////////////
 
 void vButtonHandler(void* pvParamter) {
@@ -401,6 +406,7 @@ int vLeibniz(void *pvParameter){
 	uint32_t i = -1;
 	uint32_t n = 1;																// Maximale Anzahl Leibniz-berechnungen
 	uint64_t Ticks = 0;
+	int codeblock = 0;
 		for(i = 0; i < n; i ++){
 		if(Bits & EV_STOP_LEIBNIZ){	//Stop function
 		    xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
@@ -418,22 +424,20 @@ int vLeibniz(void *pvParameter){
 		Summe += pow(-1, i) / (2 * i + 1);
 		PI = 4 * Summe;
 		n ++;
-		sprintf(&LeibnizString[0], "PI ist %.7f", PI);		// Ganzzahl und Kommastellen in String einlesen	
+		sprintf(&LeibnizString[0], "PI is %.7f", PI);		// Ganzzahl und Kommastellen in String einlesen	
 		Endtime = xTaskGetTickCount() - Starttime;
 		Ticks += Endtime;
-		sprintf(&TimeStringL[0], "%d s", (Ticks / 1000));
-		if((uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){
-			sprintf(&LeibnizString[0], "PI ist %.7f", PI);
-			xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-			Bits = xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
-			vTaskSuspend(NULL);
+		sprintf(&TimeStringL[0], "%ds", (Ticks / 1000));
+		if(codeblock == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){
+			sprintf(&ExactTime[0], "%ds", (Ticks / 1000));
+			codeblock = 1;
 		}
 	}
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-//						Nilakantha-Folge-Task							//
+//						Nilakantha calculation							//
 //////////////////////////////////////////////////////////////////////////
 
 void vNikalantha(void *pvParameter){
@@ -490,9 +494,9 @@ void vNikalantha(void *pvParameter){
 		float PIkomma5 = PIkomma4 - PIint3;											// Die dritten vier Kommastellen ermitteln als float
 		int PIint4 = PIkomma5 * 10000;												// Die dritten vier Kommastellen ermitteln als int
 		Endtime = xTaskGetTickCount() - Starttime;
-		sprintf(NikalanthaString, "PI ist %d.%d%d%d", PIint1, PIint2, PIint3, PIint4);	// Ganzzahl und Kommastellen in String einlesen
+		sprintf(NikalanthaString, "PI is %d.%d%d%d", PIint1, PIint2, PIint3, PIint4);	// Ganzzahl und Kommastellen in String einlesen
 		Ticks += Endtime;
-		sprintf(TimeStringN, "%d ms", Ticks);
+		sprintf(TimeStringN, "%ds", (Ticks / 1000));
 		}
 	}	
 }
