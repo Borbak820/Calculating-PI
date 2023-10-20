@@ -403,6 +403,8 @@ void vLeibniz(void *pvParameter){
 	xEventGroupWaitBits(evStartStopEvents, EV_START_LEIBNIZ, pdFALSE, pdTRUE, portMAX_DELAY);
 	TickType_t Starttime;
 	TickType_t Endtime; 
+	TickType_t PauseStartTime;
+	TickType_t PauseTime;
 	
 	start_here:
 	PI = 0;
@@ -421,10 +423,19 @@ void vLeibniz(void *pvParameter){
 		currentTime = xTaskGetTickCount();
 		Elapsedcounter = currentTime - lastExecutionTime;
 		if(Bits & EV_STOP_LEIBNIZ){	//Stop function
+			Endtime = xTaskGetTickCount() - Starttime;
+			Elapsedtime += Endtime;
 		    xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
 			Bits = xEventGroupGetBits(evStartStopEvents);
 			Bits &= (~EV_START_LEIBNIZ & ~EV_STOP_LEIBNIZ) ;  // EV_START_LEIBNIZ löschen
             vTaskSuspend(NULL);
+			if (Bits & EV_RESET_LEIBNIZ){
+				xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
+				xEventGroupSetBits(evStartStopEvents, EV_START_LEIBNIZ);
+				Bits = xEventGroupGetBits(evStartStopEvents);
+				goto start_here;
+			}
+			Starttime  = xTaskGetTickCount();
 		}
 		else if (Bits & EV_RESET_LEIBNIZ){	//Reset function
 			xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
@@ -448,7 +459,8 @@ void vLeibniz(void *pvParameter){
 			elapsedSeconds ++;
 		}
 		
-		if(Codeblocker == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){
+
+		if(Codeblocker == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){		
 			Endtime = xTaskGetTickCount() - Starttime;
 			Elapsedtime += Endtime;
 			sprintf(&LeibnizExactTime[0], "Pi in %ds", (Elapsedtime / 1000));
@@ -514,7 +526,7 @@ void vNikalantha(void *pvParameter){
             }
 			
 			Zaehler *= -1;	
-			PI = PI +(Zaehler * 4 / (n * (n + 1) * (n + 2)));
+			PI += (Zaehler * 4 / (n * (n + 1) * (n + 2)));
 			n += 2;
 			
 			if (Elapsedcounter >= pdMS_TO_TICKS(500)) {
