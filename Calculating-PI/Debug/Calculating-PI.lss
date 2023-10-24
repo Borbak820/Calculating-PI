@@ -8747,7 +8747,7 @@ void vUserInterface(void* pvParameters){
     4378:	8b 2b       	or	r24, r27
     437a:	09 f0       	breq	.+2      	; 0x437e <vUserInterface+0x80>
     437c:	14 c2       	rjmp	.+1064   	; 0x47a6 <vUserInterface+0x4a8>
-			if(Menu == 0){	//Start screen
+			if(Menu == Menu_Main){	//Start screen
     437e:	80 91 34 35 	lds	r24, 0x3534	; 0x803534 <Menu>
     4382:	90 91 35 35 	lds	r25, 0x3535	; 0x803535 <Menu+0x1>
     4386:	89 2b       	or	r24, r25
@@ -8835,7 +8835,7 @@ void vUserInterface(void* pvParameters){
     442a:	0f 90       	pop	r0
     442c:	0f 90       	pop	r0
 			}
-			if(Menu == 1){	//Pi Demo screen
+			if(Menu == Menu_Demo){	//Pi Demo screen
     442e:	80 91 34 35 	lds	r24, 0x3534	; 0x803534 <Menu>
     4432:	90 91 35 35 	lds	r25, 0x3535	; 0x803535 <Menu+0x1>
     4436:	01 97       	sbiw	r24, 0x01	; 1
@@ -8935,7 +8935,7 @@ void vUserInterface(void* pvParameters){
     44f0:	0f 90       	pop	r0
     44f2:	0f 90       	pop	r0
 			}
-			if(Menu == 2){	//Leibniz's Pi screen
+			if(Menu == Menu_Leibniz){	//Leibniz's Pi screen
     44f4:	80 91 34 35 	lds	r24, 0x3534	; 0x803534 <Menu>
     44f8:	90 91 35 35 	lds	r25, 0x3535	; 0x803535 <Menu+0x1>
     44fc:	02 97       	sbiw	r24, 0x02	; 2
@@ -9103,7 +9103,7 @@ void vUserInterface(void* pvParameters){
     4640:	0f 90       	pop	r0
     4642:	0f 90       	pop	r0
 			}
-			if(Menu == 3){	//Nilakantha's Pi screen
+			if(Menu == Menu_Nilakantha){	//Nilakantha's Pi screen
     4644:	80 91 34 35 	lds	r24, 0x3534	; 0x803534 <Menu>
     4648:	90 91 35 35 	lds	r25, 0x3535	; 0x803535 <Menu+0x1>
     464c:	03 97       	sbiw	r24, 0x03	; 3
@@ -9300,7 +9300,7 @@ void vUserInterface(void* pvParameters){
 		//							Menu selection								//
 		//////////////////////////////////////////////////////////////////////////
 		
-		if (Menu == 0){
+		if (Menu == Menu_Main){
     47bc:	80 91 34 35 	lds	r24, 0x3534	; 0x803534 <Menu>
     47c0:	90 91 35 35 	lds	r25, 0x3535	; 0x803535 <Menu+0x1>
     47c4:	89 2b       	or	r24, r25
@@ -9325,7 +9325,7 @@ void vUserInterface(void* pvParameters){
     47e8:	b1 05       	cpc	r27, r1
     47ea:	a9 f4       	brne	.+42     	; 0x4816 <vUserInterface+0x518>
 				case 1:
-					Menu = 1;
+					Menu = Menu_Demo;
     47ec:	81 e0       	ldi	r24, 0x01	; 1
     47ee:	90 e0       	ldi	r25, 0x00	; 0
     47f0:	80 93 34 35 	sts	0x3534, r24	; 0x803534 <Menu>
@@ -9334,7 +9334,7 @@ void vUserInterface(void* pvParameters){
     47f8:	0e c0       	rjmp	.+28     	; 0x4816 <vUserInterface+0x518>
 					
 				case 2:
-					Menu = 2;
+					Menu = Menu_Leibniz;
     47fa:	82 e0       	ldi	r24, 0x02	; 2
     47fc:	90 e0       	ldi	r25, 0x00	; 0
     47fe:	80 93 34 35 	sts	0x3534, r24	; 0x803534 <Menu>
@@ -9343,7 +9343,7 @@ void vUserInterface(void* pvParameters){
     4806:	07 c0       	rjmp	.+14     	; 0x4816 <vUserInterface+0x518>
 					
 				case 4:
-					Menu = 3;
+					Menu = Menu_Nilakantha;
     4808:	83 e0       	ldi	r24, 0x03	; 3
     480a:	90 e0       	ldi	r25, 0x00	; 0
     480c:	80 93 34 35 	sts	0x3534, r24	; 0x803534 <Menu>
@@ -9355,7 +9355,7 @@ void vUserInterface(void* pvParameters){
 		//							Pi Demo functions							//
 		//////////////////////////////////////////////////////////////////////////
 		
-		if (Menu == 1){
+		if (Menu == Menu_Demo){
     4816:	80 91 34 35 	lds	r24, 0x3534	; 0x803534 <Menu>
     481a:	90 91 35 35 	lds	r25, 0x3535	; 0x803535 <Menu+0x1>
     481e:	01 97       	sbiw	r24, 0x01	; 1
@@ -9369,7 +9369,7 @@ void vUserInterface(void* pvParameters){
     482c:	a1 05       	cpc	r26, r1
     482e:	b1 05       	cpc	r27, r1
     4830:	21 f4       	brne	.+8      	; 0x483a <vUserInterface+0x53c>
-					Menu = 0;
+					Menu = Menu_Main;
     4832:	10 92 34 35 	sts	0x3534, r1	; 0x803534 <Menu>
     4836:	10 92 35 35 	sts	0x3535, r1	; 0x803535 <Menu+0x1>
 		
@@ -9377,7 +9377,7 @@ void vUserInterface(void* pvParameters){
 		//						Leibniz's Pi functions							//
 		//////////////////////////////////////////////////////////////////////////
 		
-		if(Menu == 2){
+		if(Menu == Menu_Leibniz){
     483a:	80 91 34 35 	lds	r24, 0x3534	; 0x803534 <Menu>
     483e:	90 91 35 35 	lds	r25, 0x3535	; 0x803535 <Menu+0x1>
     4842:	02 97       	sbiw	r24, 0x02	; 2
@@ -9740,7 +9740,7 @@ void vUserInterface(void* pvParameters){
     4b46:	90 93 75 35 	sts	0x3575, r25	; 0x803575 <Bits+0x1>
     4b4a:	a0 93 76 35 	sts	0x3576, r26	; 0x803576 <Bits+0x2>
     4b4e:	b0 93 77 35 	sts	0x3577, r27	; 0x803577 <Bits+0x3>
-					Menu = 3;													//Set Menu to 3 to switch to Nilakantha
+					Menu = Menu_Nilakantha;										//Set Menu to 3 to switch to Nilakantha
     4b52:	83 e0       	ldi	r24, 0x03	; 3
     4b54:	90 e0       	ldi	r25, 0x00	; 0
     4b56:	80 93 34 35 	sts	0x3534, r24	; 0x803534 <Menu>
@@ -9789,7 +9789,7 @@ void vUserInterface(void* pvParameters){
 		//						Nilakantha's Pi functions						//
 		//////////////////////////////////////////////////////////////////////////
 		
-		if (Menu == 3) {
+		if (Menu == Menu_Nilakantha) {
     4b8a:	80 91 34 35 	lds	r24, 0x3534	; 0x803534 <Menu>
     4b8e:	90 91 35 35 	lds	r25, 0x3535	; 0x803535 <Menu+0x1>
     4b92:	03 97       	sbiw	r24, 0x03	; 3
@@ -10151,7 +10151,7 @@ void vUserInterface(void* pvParameters){
     4e96:	90 93 75 35 	sts	0x3575, r25	; 0x803575 <Bits+0x1>
     4e9a:	a0 93 76 35 	sts	0x3576, r26	; 0x803576 <Bits+0x2>
     4e9e:	b0 93 77 35 	sts	0x3577, r27	; 0x803577 <Bits+0x3>
-						Menu = 2;												//Set Menu to 2 to switch to Leibniz
+						Menu = Menu_Leibniz;									//Set Menu to 2 to switch to Leibniz
     4ea2:	82 e0       	ldi	r24, 0x02	; 2
     4ea4:	90 e0       	ldi	r25, 0x00	; 0
     4ea6:	80 93 34 35 	sts	0x3534, r24	; 0x803534 <Menu>
@@ -10195,7 +10195,7 @@ void vUserInterface(void* pvParameters){
 					}
 					break;
     4ed8:	00 00       	nop
-						Menu = 2;												//Set Menu to 2 to switch to Leibniz
+						Menu = Menu_Leibniz;									//Set Menu to 2 to switch to Leibniz
 						ButtonState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);	//Clear Buttonstate to avoid switching back imediatly
 					break;
 			}

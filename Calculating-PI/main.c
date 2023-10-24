@@ -65,6 +65,7 @@ TaskHandle_t ButtonTask;
 #define EV_STOPPED_NILA			1<<5	//32
 #define EV_RESET_LEIBNIZ		1<<6	//64
 #define EV_RESET_NILA			1<<7	//128
+#define EV_READ_STRING			1<<8	//256
 #define EV_CLEAR				0xFF
 EventGroupHandle_t evStartStopEvents;
 
@@ -96,10 +97,19 @@ char NilakanthaExactTime[10];
 
 
 //////////////////////////////////////////////////////////////////////////
+//							Menu defines								//
+//////////////////////////////////////////////////////////////////////////
+
+#define Menu_Main		0
+#define Menu_Demo		1
+#define Menu_Leibniz	2
+#define Menu_Nilakantha 3
+
+
+//////////////////////////////////////////////////////////////////////////
 //							Global variables							//
 //////////////////////////////////////////////////////////////////////////
-int Menu = 0;
-
+int Menu = Menu_Main;
 
 //////////////////////////////////////////////////////////////////////////
 //						Idle Hook Application							//
@@ -151,14 +161,14 @@ void vUserInterface(void* pvParameters){
 		//////////////////////////////////////////////////////////////////////////
 		
 		if (DisplayUpdateCounter == 0){
-			if(Menu == 0){	//Start screen
+			if(Menu == Menu_Main){	//Start screen
 				vDisplayClear();
 				vDisplayWriteStringAtPos(0,0, "Pi-Calculator");
 				vDisplayWriteStringAtPos(1,0, "1: Pi aus math.h");
 				vDisplayWriteStringAtPos(2,0, "2: Leibniz-Serie");
 				vDisplayWriteStringAtPos(3,0, "3: Nilakantha-Serie");
 			}
-			if(Menu == 1){	//Pi Demo screen
+			if(Menu == Menu_Demo){	//Pi Demo screen
 				char pistring[12];
 				vDisplayClear();
 				sprintf(&pistring[0], "PI: %.8f", M_PI);
@@ -166,7 +176,7 @@ void vUserInterface(void* pvParameters){
 				vDisplayWriteStringAtPos(1,0, "%s", pistring);
 				vDisplayWriteStringAtPos(3,0, "4: Back");
 			}
-			if(Menu == 2){	//Leibniz's Pi screen
+			if(Menu == Menu_Leibniz){	//Leibniz's Pi screen
 				vDisplayClear();
 				vDisplayWriteStringAtPos(0,0, "%s", LeibnizPiString);
 				vDisplayWriteStringAtPos(0,16, "%s", LeibnizTimeString);
@@ -176,7 +186,7 @@ void vUserInterface(void* pvParameters){
 				vDisplayWriteStringAtPos(2,10, "3: Reset");
 				vDisplayWriteStringAtPos(3,0, "4: ~ Nilakantha");
 			}
-			if(Menu == 3){	//Nilakantha's Pi screen
+			if(Menu == Menu_Nilakantha){	//Nilakantha's Pi screen
 				vDisplayClear();
 				vDisplayWriteStringAtPos(0,0, "%s", NilakanthaPiString);
 				vDisplayWriteStringAtPos(0,16, "%s", NilakanthaTimeString);
@@ -197,18 +207,18 @@ void vUserInterface(void* pvParameters){
 		//							Menu selection								//
 		//////////////////////////////////////////////////////////////////////////
 		
-		if (Menu == 0){
+		if (Menu == Menu_Main){
 			switch(ButtonState){
 				case 1:
-					Menu = 1;
+					Menu = Menu_Demo;
 				break;
 					
 				case 2:
-					Menu = 2;
+					Menu = Menu_Leibniz;
 				break;
 					
 				case 4:
-					Menu = 3;
+					Menu = Menu_Nilakantha;
 				break;
 			}
 		}
@@ -218,9 +228,9 @@ void vUserInterface(void* pvParameters){
 		//							Pi Demo functions							//
 		//////////////////////////////////////////////////////////////////////////
 		
-		if (Menu == 1){
+		if (Menu == Menu_Demo){
 			if (ButtonState == 8) {	//Leave Demo - back to Start screen
-					Menu = 0;
+					Menu = Menu_Main;
 			}
 		}
 		
@@ -229,7 +239,7 @@ void vUserInterface(void* pvParameters){
 		//						Leibniz's Pi functions							//
 		//////////////////////////////////////////////////////////////////////////
 		
-		if(Menu == 2){
+		if(Menu == Menu_Leibniz){
 			switch (ButtonState){
 				case 1:
 				if (Bits == 0){	
@@ -282,7 +292,7 @@ void vUserInterface(void* pvParameters){
 					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);			//Clear all Bits from Event
 					xEventGroupSetBits(evStartStopEvents, EV_STOP_LEIBNIZ);		//Set Stopbit
 					Bits = xEventGroupGetBits(evStartStopEvents);				//Save eventbits as value
-					Menu = 3;													//Set Menu to 3 to switch to Nilakantha
+					Menu = Menu_Nilakantha;										//Set Menu to 3 to switch to Nilakantha
 					ButtonState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);	//Clear Buttonstate to avoid switching back imediatly
 				break;
 			}
@@ -293,7 +303,7 @@ void vUserInterface(void* pvParameters){
 		//						Nilakantha's Pi functions						//
 		//////////////////////////////////////////////////////////////////////////
 		
-		if (Menu == 3) {
+		if (Menu == Menu_Nilakantha) {
 			switch (ButtonState) {
 				case 1:
 					if (Bits == 0){	//First start since Main screen
@@ -345,7 +355,7 @@ void vUserInterface(void* pvParameters){
 						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);		//Clear all Bits from Event
 						xEventGroupSetBits(evStartStopEvents, EV_STOP_NILA);	//Set Stopbit
 						Bits = xEventGroupGetBits(evStartStopEvents);			//Save eventbits as value
-						Menu = 2;												//Set Menu to 2 to switch to Leibniz
+						Menu = Menu_Leibniz;									//Set Menu to 2 to switch to Leibniz
 						ButtonState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);	//Clear Buttonstate to avoid switching back imediatly
 					break;
 			}
