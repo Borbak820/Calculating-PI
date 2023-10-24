@@ -65,9 +65,15 @@ TaskHandle_t ButtonTask;
 #define EV_STOPPED_NILA			1<<5	//32
 #define EV_RESET_LEIBNIZ		1<<6	//64
 #define EV_RESET_NILA			1<<7	//128
-#define EV_READ_STRING			1<<8	//256
 #define EV_CLEAR				0xFF
 EventGroupHandle_t evStartStopEvents;
+
+//Define Events for Read String
+#define EV_WRITE_IN_LEIBNIZSTRING			1<<0	//1
+#define EV_READ_FROM_LEIBNIZSTRING			0xFF	//0
+#define	EV_WRITE_IN_NILASTRING				1<<1	//2
+#define EV_READ_FROM_NILASTRING				0xFF	//0
+EventGroupHandle_t evREADWRITE;
 
 //Define Events for Buttonpresses
 #define EVBUTTONS_S1	1<<0	//1
@@ -110,6 +116,7 @@ char NilakanthaExactTime[10];
 //							Global variables							//
 //////////////////////////////////////////////////////////////////////////
 int Menu = Menu_Main;
+int checkEvent;
 
 //////////////////////////////////////////////////////////////////////////
 //						Idle Hook Application							//
@@ -130,6 +137,7 @@ int main(void){
 
 	evStartStopEvents = xEventGroupCreate();
 	evButtonEvents = xEventGroupCreate();
+	evREADWRITE = xEventGroupCreate();
 
 	xTaskCreate(vUserInterface, (const char *) "ControlTask", configMINIMAL_STACK_SIZE+150, NULL, 3, NULL);
 	xTaskCreate(vButtonHandler, (const char*) "ButtonTask", configMINIMAL_STACK_SIZE+30, NULL, 2, &ButtonTask);
@@ -178,23 +186,66 @@ void vUserInterface(void* pvParameters){
 			}
 			if(Menu == Menu_Leibniz){	//Leibniz's Pi screen
 				vDisplayClear();
-				vDisplayWriteStringAtPos(0,0, "%s", LeibnizPiString);
-				vDisplayWriteStringAtPos(0,16, "%s", LeibnizTimeString);
-				vDisplayWriteStringAtPos(1,0, "1: Start");
-				vDisplayWriteStringAtPos(1,9, "%s", LeibnizExactTime);
-				vDisplayWriteStringAtPos(2,0, "2: Stop");
-				vDisplayWriteStringAtPos(2,10, "3: Reset");
-				vDisplayWriteStringAtPos(3,0, "4: ~ Nilakantha");
+				if ((Bits == 0) | (Bits != EV_START_LEIBNIZ) | (Bits != EV_STOPPED_LEIBNIZ)){
+					vDisplayWriteStringAtPos(1,0, "1: Start");
+					vDisplayWriteStringAtPos(2,0, "2: Stop");
+					vDisplayWriteStringAtPos(2,10, "3: Reset");
+					vDisplayWriteStringAtPos(3,0, "4: ~ Nilakantha");
+				}
+				if (Bits == EV_START_LEIBNIZ){
+					vDisplayWriteStringAtPos(1,0, "1: Start");
+					vDisplayWriteStringAtPos(2,0, "2: Stop");
+					vDisplayWriteStringAtPos(2,10, "3: Reset");
+					vDisplayWriteStringAtPos(3,0, "4: ~ Nilakantha");
+					xEventGroupSetBits(evREADWRITE,EV_WRITE_IN_LEIBNIZSTRING);
+					checkEvent = xEventGroupGetBits(evREADWRITE);
+					xEventGroupWaitBits(evREADWRITE,EV_READ_FROM_LEIBNIZSTRING,pdTRUE,pdTRUE,portMAX_DELAY);
+					checkEvent = xEventGroupGetBits(evREADWRITE);
+					vDisplayWriteStringAtPos(0,0, "%s", LeibnizPiString);
+					vDisplayWriteStringAtPos(0,16, "%s", LeibnizTimeString);
+					vDisplayWriteStringAtPos(1,9, "%s", LeibnizExactTime);
+				}
+				if ((Bits == EV_STOPPED_LEIBNIZ) | (Bits == EV_STOP_NILA)){
+					vDisplayWriteStringAtPos(1,0, "1: Start");
+					vDisplayWriteStringAtPos(2,0, "2: Stop");
+					vDisplayWriteStringAtPos(2,10, "3: Reset");
+					vDisplayWriteStringAtPos(3,0, "4: ~ Nilakantha");
+					vDisplayWriteStringAtPos(0,0, "%s", LeibnizPiString);
+					vDisplayWriteStringAtPos(0,16, "%s", LeibnizTimeString);
+					vDisplayWriteStringAtPos(1,9, "%s", LeibnizExactTime);
+				}
 			}
 			if(Menu == Menu_Nilakantha){	//Nilakantha's Pi screen
-				vDisplayClear();
-				vDisplayWriteStringAtPos(0,0, "%s", NilakanthaPiString);
-				vDisplayWriteStringAtPos(0,16, "%s", NilakanthaTimeString);
-				vDisplayWriteStringAtPos(1,0, "1: Start");
-				vDisplayWriteStringAtPos(1,9, "%s", NilakanthaExactTime);
-				vDisplayWriteStringAtPos(2,0, "2: Stop");
-				vDisplayWriteStringAtPos(2,10, "3: Reset");
-				vDisplayWriteStringAtPos(3,0, "4: ~ Leibniz");
+				if ((Bits == 0) | (Bits != EV_START_NILA) | (Bits != EV_STOPPED_NILA)){
+					vDisplayClear();
+					vDisplayWriteStringAtPos(1,0, "1: Start");
+					vDisplayWriteStringAtPos(2,0, "2: Stop");
+					vDisplayWriteStringAtPos(2,10, "3: Reset");
+					vDisplayWriteStringAtPos(3,0, "4: ~ Leibniz");
+				}
+				if (Bits == EV_START_NILA){
+					vDisplayWriteStringAtPos(1,0, "1: Start");
+					vDisplayWriteStringAtPos(2,0, "2: Stop");
+					vDisplayWriteStringAtPos(2,10, "3: Reset");
+					vDisplayWriteStringAtPos(3,0, "4: ~ Leibniz");
+					xEventGroupSetBits(evREADWRITE,EV_WRITE_IN_NILASTRING);
+					checkEvent = xEventGroupGetBits(evREADWRITE);
+					xEventGroupWaitBits(evREADWRITE,EV_READ_FROM_NILASTRING,pdTRUE,pdTRUE,portMAX_DELAY);
+					checkEvent = xEventGroupGetBits(evREADWRITE);
+					vDisplayClear();
+					vDisplayWriteStringAtPos(0,0, "%s", NilakanthaPiString);
+					vDisplayWriteStringAtPos(0,16, "%s", NilakanthaTimeString);
+					vDisplayWriteStringAtPos(1,9, "%s", NilakanthaExactTime);
+				}
+				if ((Bits == EV_STOPPED_NILA) | (Bits == EV_STOPPED_LEIBNIZ)){
+					vDisplayWriteStringAtPos(1,0, "1: Start");
+					vDisplayWriteStringAtPos(2,0, "2: Stop");
+					vDisplayWriteStringAtPos(2,10, "3: Reset");
+					vDisplayWriteStringAtPos(3,0, "4: ~ Leibniz");
+					vDisplayWriteStringAtPos(0,0, "%s", NilakanthaPiString);
+					vDisplayWriteStringAtPos(0,16, "%s", NilakanthaTimeString);
+					vDisplayWriteStringAtPos(1,9, "%s", NilakanthaExactTime);
+				}
 			}
 			DisplayUpdateCounter = 50;	//Refreshing Time (50*10ms=500ms)	
 		}
@@ -276,15 +327,13 @@ void vUserInterface(void* pvParameters){
 				break;
 
 				case 4:
-				if (Bits) {
 					// Reset - set Leibniz calculation to 0
 					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);			//Clear all Bits from Event
 					xEventGroupSetBits(evStartStopEvents, EV_RESET_LEIBNIZ);	//Set Resetbit
 					Bits = xEventGroupGetBits(evStartStopEvents);				//Save eventbits as value
-						sprintf(&LeibnizPiString[0], " ");						//Write " " into String, Display clears Line
-						sprintf(&LeibnizTimeString[0], " ");					//Write " " into String, Display clears Line
-						sprintf(&LeibnizExactTime[0], " ");						//Write " " into String, Display clears Line
-				}
+					sprintf(&LeibnizPiString[0], " ");							//Write " " into String, Display clears Line
+					sprintf(&LeibnizTimeString[0], " ");						//Write " " into String, Display clears Line
+					sprintf(&LeibnizExactTime[0], " ");							//Write " " into String, Display clears Line
 				break;
 
 				case 8:
@@ -409,7 +458,7 @@ void vButtonHandler(void* pvParamter) {
 //////////////////////////////////////////////////////////////////////////
 
 void vLeibniz(void *pvParameter){
-	(void) pvParameter; 
+	(void) pvParameter;
 	//Set Local variables
 	float32_t PI;
 	float32_t Summe;
@@ -422,12 +471,12 @@ void vLeibniz(void *pvParameter){
 	
 	start_here:	//Startpoint after reset calculation
 	
-	//Local Variables with startvalue, 
+	//Local Variables with startvalue,
 	PI = 0;
 	Summe = 0.0;
 	TickType_t lastExecutionTime = xTaskGetTickCount();
 	uint32_t i = -1;
-	uint32_t n = 1;	
+	uint32_t n = 1;
 	int Elapsedtime = 0;
 	int elapsedSeconds = 0;
 	uint32_t currentTime = 0;
@@ -441,10 +490,10 @@ void vLeibniz(void *pvParameter){
 		if(Bits & EV_STOP_LEIBNIZ){	//Stop function
 			Endtime = xTaskGetTickCount() - Starttime;
 			Elapsedtime += Endtime;
-		    xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
+			xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
 			Bits = xEventGroupGetBits(evStartStopEvents);
 			Bits &= (~EV_START_LEIBNIZ & ~EV_STOP_LEIBNIZ) ;  //delete EV_START_LEIBNIZ and EV_STOP_LEIBNIZ from eventgroup
-            vTaskSuspend(NULL);
+			vTaskSuspend(NULL);
 			if (Bits & EV_RESET_LEIBNIZ){	//Reset function
 				xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
 				xEventGroupSetBits(evStartStopEvents, EV_START_LEIBNIZ);
@@ -455,7 +504,7 @@ void vLeibniz(void *pvParameter){
 		}
 		else if (Bits & EV_RESET_LEIBNIZ){	//Reset function
 			xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-            xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
+			xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
 			Bits = xEventGroupGetBits(evStartStopEvents);
 			memset(LeibnizPiString, 0, sizeof(LeibnizPiString));		//String gets emptied
 			memset(LeibnizTimeString, 0, sizeof(LeibnizTimeString));	//String gets emptied
@@ -469,16 +518,19 @@ void vLeibniz(void *pvParameter){
 		PI = 4 * Summe;
 		n ++;
 		
-		//Writes every 500ms Pi and elapsed Time into Strings
-		if (Elapsedcounter >= pdMS_TO_TICKS(500)) {
+		//Writes Pi and elapsed Time into Strings
+		if (checkEvent & EV_WRITE_IN_LEIBNIZSTRING) {
+			checkEvent = xEventGroupGetBits(evREADWRITE);
 			sprintf(&LeibnizPiString[0], "PI is %.7f", PI);
 			sprintf(&LeibnizTimeString[0], "%ds", (elapsedSeconds / 2));
 			lastExecutionTime = currentTime;
 			elapsedSeconds ++;
+			xEventGroupSetBits(evREADWRITE,EV_READ_FROM_LEIBNIZSTRING);
+			checkEvent = xEventGroupGetBits(evREADWRITE);
 		}
 		
 		//Writes exact Time into String when Pi has reached 5 digits precise, can only happen once trough Codeblock
-		if(Codeblocker == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){		
+		if(Codeblocker == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){
 			Endtime = xTaskGetTickCount() - Starttime;
 			Elapsedtime += Endtime;
 			sprintf(&LeibnizExactTime[0], "Pi %dms", Elapsedtime);
@@ -501,16 +553,16 @@ void vNilakantha(void *pvParameter){
 	
 	xEventGroupWaitBits(evStartStopEvents, EV_START_NILA, pdFALSE, pdTRUE, portMAX_DELAY);	//Task waits for Eventbit to start
 	
-    while (1) {
-        start_here:	//Startpoint after reset calculation
+	while (1) {
+		start_here:	//Startpoint after reset calculation
 		xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-        Bits = xEventGroupSetBits(evStartStopEvents, EV_START_NILA);
+		Bits = xEventGroupSetBits(evStartStopEvents, EV_START_NILA);
 		
-		//Local Variables with startvalue, 
+		//Local Variables with startvalue,
 		int Elapsedtime = 0;
-        float32_t PI = 0;
+		float32_t PI = 0;
 		TickType_t lastExecutionTime = xTaskGetTickCount();
-        long int i = 0;
+		long int i = 0;
 		long int n = 2;
 		int elapsedSeconds = 0;
 		uint32_t currentTime = 0;
@@ -519,46 +571,49 @@ void vNilakantha(void *pvParameter){
 		Zaehler = -1;
 		Starttime  = xTaskGetTickCount();
 		
-        if (i == 0) {
-            //First calculation
-            PI = 3;
-            Zaehler *= -1;
-            PI = PI + (Zaehler * 4 / (n * (n + 1) * (n + 2)));
-            n += 2;
-            i += 1;
-        }
+		if (i == 0) {
+			//First calculation
+			PI = 3;
+			Zaehler *= -1;
+			PI = PI + (Zaehler * 4 / (n * (n + 1) * (n + 2)));
+			n += 2;
+			i += 1;
+		}
 
-        for (i = 1; i < n; i++) {
+		for (i = 1; i < n; i++) {
 			currentTime = xTaskGetTickCount();
 			Elapsedcounter = currentTime - lastExecutionTime;
-            if (Bits & EV_STOP_NILA) { //Stop function
+			if (Bits & EV_STOP_NILA) { //Stop function
 				xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-                xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NILA);
+				xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NILA);
 				Bits = xEventGroupGetBits(evStartStopEvents);
-                vTaskSuspend(NULL);
-            }
-            if (Bits & EV_RESET_NILA) {	//Reset function
+				vTaskSuspend(NULL);
+			}
+			if (Bits & EV_RESET_NILA) {	//Reset function
 				xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-                xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NILA);
+				xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NILA);
 				memset(NilakanthaPiString, 0, sizeof(NilakanthaPiString));			//String gets emptied
 				memset(NilakanthaTimeString, 0, sizeof(NilakanthaTimeString));		//String gets emptied
 				memset(NilakanthaExactTime, 0, sizeof(NilakanthaExactTime));		//String gets emptied
 				Bits = xEventGroupGetBits(evStartStopEvents);
 				vTaskSuspend(NULL);
-                goto start_here;
-            }
+				goto start_here;
+			}
 			
 			//Nilakantha Algorithm
-			Zaehler *= -1;	
+			Zaehler *= -1;
 			PI += (Zaehler * 4 / (n * (n + 1) * (n + 2)));
 			n += 2;
-	
-			//Writes every 500ms Pi and elapsed Time into Strings			
-			if (Elapsedcounter >= pdMS_TO_TICKS(500)) {
+			
+			//Writes Pi and elapsed Time into Strings
+			if (checkEvent & EV_WRITE_IN_NILASTRING) {
+				checkEvent = xEventGroupGetBits(evREADWRITE);
 				sprintf(&NilakanthaPiString[0], "PI is %.7f", PI);
 				sprintf(&NilakanthaTimeString[0], "%ds", (elapsedSeconds / 2));
 				lastExecutionTime = currentTime;
 				elapsedSeconds ++;
+				xEventGroupSetBits(evREADWRITE,EV_READ_FROM_NILASTRING);
+				checkEvent = xEventGroupGetBits(evREADWRITE);
 			}
 			
 			//Writes exact Time into String when Pi has reached 5 digits precise, can only happen once trough Codeblock
@@ -569,5 +624,5 @@ void vNilakantha(void *pvParameter){
 				codeblock = 1;
 			}
 		}
-	}	
+	}
 }
