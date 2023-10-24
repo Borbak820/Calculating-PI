@@ -171,7 +171,7 @@ void vUserInterface(void* pvParameters){
 				vDisplayWriteStringAtPos(0,0, "%s", LeibnizPiString);
 				vDisplayWriteStringAtPos(0,16, "%s", LeibnizTimeString);
 				vDisplayWriteStringAtPos(1,0, "1: Start");
-				vDisplayWriteStringAtPos(1,10, "%s", LeibnizExactTime);
+				vDisplayWriteStringAtPos(1,9, "%s", LeibnizExactTime);
 				vDisplayWriteStringAtPos(2,0, "2: Stop");
 				vDisplayWriteStringAtPos(2,10, "3: Reset");
 				vDisplayWriteStringAtPos(3,0, "4: ~ Nilakantha");
@@ -181,7 +181,7 @@ void vUserInterface(void* pvParameters){
 				vDisplayWriteStringAtPos(0,0, "%s", NilakanthaPiString);
 				vDisplayWriteStringAtPos(0,16, "%s", NilakanthaTimeString);
 				vDisplayWriteStringAtPos(1,0, "1: Start");
-				vDisplayWriteStringAtPos(1,10, "%s", NilakanthaExactTime);
+				vDisplayWriteStringAtPos(1,9, "%s", NilakanthaExactTime);
 				vDisplayWriteStringAtPos(2,0, "2: Stop");
 				vDisplayWriteStringAtPos(2,10, "3: Reset");
 				vDisplayWriteStringAtPos(3,0, "4: ~ Leibniz");
@@ -408,9 +408,7 @@ void vLeibniz(void *pvParameter){
 	
 	//Variables to set after Task startet
 	TickType_t Starttime;
-	TickType_t Endtime; 
-	TickType_t PauseStartTime;
-	TickType_t PauseTime;
+	TickType_t Endtime;
 	
 	start_here:	//Startpoint after reset calculation
 	
@@ -473,7 +471,7 @@ void vLeibniz(void *pvParameter){
 		if(Codeblocker == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){		
 			Endtime = xTaskGetTickCount() - Starttime;
 			Elapsedtime += Endtime;
-			sprintf(&LeibnizExactTime[0], "Pi in %ds", (Elapsedtime / 1000));
+			sprintf(&LeibnizExactTime[0], "Pi %dms", Elapsedtime);
 			Codeblocker = 1;
 		}
 	}
@@ -557,7 +555,7 @@ void vNilakantha(void *pvParameter){
 			if(codeblock == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){
 				Endtime = xTaskGetTickCount() - Starttime;
 				Elapsedtime += Endtime;
-				sprintf(&NilakanthaExactTime[0], "Pi in %dms", Elapsedtime);
+				sprintf(&NilakanthaExactTime[0], "Pi %dms", Elapsedtime);
 				codeblock = 1;
 			}
 		}
