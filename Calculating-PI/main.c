@@ -43,12 +43,12 @@
 
 extern void vApplicationIdleHook(void);
 void vLeibniz(void *pvParameter);
-void vNikalantha(void *pvParameter);
+void vNilakantha(void *pvParameter);
 void vUserInterface(void * pvParameter);
 void vButtonHandler(void* pvParameter);
 
 TaskHandle_t LeibnizTask;
-TaskHandle_t NikalanthaTask;
+TaskHandle_t NilakanthaTask;
 TaskHandle_t ButtonTask;
 
 
@@ -59,12 +59,12 @@ TaskHandle_t ButtonTask;
 //Define Events for start and stop functions
 #define EV_START_LEIBNIZ		1<<0	//1
 #define EV_STOP_LEIBNIZ			1<<1	//2
-#define EV_START_NIKA			1<<2	//4
-#define EV_STOP_NIKA			1<<3	//8
+#define EV_START_NILA			1<<2	//4
+#define EV_STOP_NILA			1<<3	//8
 #define EV_STOPPED_LEIBNIZ		1<<4	//16
-#define EV_STOPPED_NIKA			1<<5	//32
+#define EV_STOPPED_NILA			1<<5	//32
 #define EV_RESET_LEIBNIZ		1<<6	//64
-#define EV_RESET_NIKA			1<<7	//128
+#define EV_RESET_NILA			1<<7	//128
 #define EV_CLEAR				0xFF
 EventGroupHandle_t evStartStopEvents;
 
@@ -90,9 +90,9 @@ EventBits_t Bits;
 char LeibnizPiString[16];
 char LeibnizTimeString[3];
 char LeibnizExactTime[10];
-char NikalanthaPiString[16];
-char NikalanthaTimeString[3];
-char NikalanthaExactTime[10];
+char NilakanthaPiString[16];
+char NilakanthaTimeString[3];
+char NilakanthaExactTime[10];
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -124,7 +124,7 @@ int main(void){
 	xTaskCreate(vUserInterface, (const char *) "ControlTask", configMINIMAL_STACK_SIZE+150, NULL, 3, NULL);
 	xTaskCreate(vButtonHandler, (const char*) "ButtonTask", configMINIMAL_STACK_SIZE+30, NULL, 2, &ButtonTask);
 	xTaskCreate(vLeibniz, (const char *) "Leibniz-Folge-Task", configMINIMAL_STACK_SIZE+100, NULL, 1, &LeibnizTask);
-	xTaskCreate(vNikalantha, (const char *) "Nikalantha-Folge-Task", configMINIMAL_STACK_SIZE+300, NULL, 1, &NikalanthaTask);
+	xTaskCreate(vNilakantha, (const char *) "Nilakantha-Folge-Task", configMINIMAL_STACK_SIZE+300, NULL, 1, &NilakanthaTask);
 
 	vTaskStartScheduler();
 	
@@ -156,7 +156,7 @@ void vUserInterface(void* pvParameters){
 				vDisplayWriteStringAtPos(0,0, "Pi-Calculator");
 				vDisplayWriteStringAtPos(1,0, "1: Pi aus math.h");
 				vDisplayWriteStringAtPos(2,0, "2: Leibniz-Serie");
-				vDisplayWriteStringAtPos(3,0, "3: Nikalantha-Serie");
+				vDisplayWriteStringAtPos(3,0, "3: Nilakantha-Serie");
 			}
 			if(Menu == 1){	//Pi Demo screen
 				char pistring[12];
@@ -174,14 +174,14 @@ void vUserInterface(void* pvParameters){
 				vDisplayWriteStringAtPos(1,10, "%s", LeibnizExactTime);
 				vDisplayWriteStringAtPos(2,0, "2: Stop");
 				vDisplayWriteStringAtPos(2,10, "3: Reset");
-				vDisplayWriteStringAtPos(3,0, "4: ~ Nikalantha");
+				vDisplayWriteStringAtPos(3,0, "4: ~ Nilakantha");
 			}
-			if(Menu == 3){	//Nikalantha's Pi screen
+			if(Menu == 3){	//Nilakantha's Pi screen
 				vDisplayClear();
-				vDisplayWriteStringAtPos(0,0, "%s", NikalanthaPiString);
-				vDisplayWriteStringAtPos(0,16, "%s", NikalanthaTimeString);
+				vDisplayWriteStringAtPos(0,0, "%s", NilakanthaPiString);
+				vDisplayWriteStringAtPos(0,16, "%s", NilakanthaTimeString);
 				vDisplayWriteStringAtPos(1,0, "1: Start");
-				vDisplayWriteStringAtPos(1,10, "%s", NikalanthaExactTime);
+				vDisplayWriteStringAtPos(1,10, "%s", NilakanthaExactTime);
 				vDisplayWriteStringAtPos(2,0, "2: Stop");
 				vDisplayWriteStringAtPos(2,10, "3: Reset");
 				vDisplayWriteStringAtPos(3,0, "4: ~ Leibniz");
@@ -232,119 +232,121 @@ void vUserInterface(void* pvParameters){
 		if(Menu == 2){
 			switch (ButtonState){
 				case 1:
-				if (Bits == 0){	//First start since Main screen
+				if (Bits == 0){	
+					//First start since Main screen
 					xEventGroupSetBits(evStartStopEvents, EV_START_LEIBNIZ);	//Set startbit
-					Bits = xEventGroupGetBits(evStartStopEvents);	//Save eventbits as value
+					Bits = xEventGroupGetBits(evStartStopEvents);				//Save eventbits as value
 				}
-				else if (Bits & (EV_STOPPED_NIKA | EV_STOP_NIKA)){	//Start if switched from Nikalantha's Pi
-					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
+				else if (Bits & (EV_STOPPED_NILA | EV_STOP_NILA)){				//Start if switched from Nilakantha's Pi
+					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);			//Clear all Bits from Event
 					xEventGroupSetBits(evStartStopEvents, EV_START_LEIBNIZ);	//Set startbit
-					Bits = xEventGroupGetBits(evStartStopEvents);
-					vTaskResume(LeibnizTask);	//Resume where stopped
+					Bits = xEventGroupGetBits(evStartStopEvents);				//Save eventbits as value
+					vTaskResume(LeibnizTask);									//Resume where stopped
 				}
-				else if (Bits & (EV_STOP_LEIBNIZ | EV_STOPPED_LEIBNIZ)){
-					// Restart Leibniz calculation if stopped or resetted
-					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-					xEventGroupSetBits(evStartStopEvents, EV_START_LEIBNIZ);
-					Bits = xEventGroupGetBits(evStartStopEvents);
-					vTaskResume(LeibnizTask);
+				else if (Bits & (EV_STOP_LEIBNIZ | EV_STOPPED_LEIBNIZ)){ 
+					//Restart Leibniz calculation if stopped
+					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);			//Clear all Bits from Event
+					xEventGroupSetBits(evStartStopEvents, EV_START_LEIBNIZ);	//Set startbit
+					Bits = xEventGroupGetBits(evStartStopEvents);				//Save eventbits as value
+					vTaskResume(LeibnizTask);									//Resume where stopped
 				}
-				else if (Bits & EV_RESET_LEIBNIZ){
-					vTaskResume(LeibnizTask);					
+				else if (Bits & EV_RESET_LEIBNIZ){	
+					//Restart Leibniz after reset
+					vTaskResume(LeibnizTask);									//Resume where stopped
 				}
 				break;
 
 				case 2:
-				if(Bits & (EV_START_LEIBNIZ | EV_STOP_NIKA)){
+				if(Bits & (EV_START_LEIBNIZ | EV_STOP_NILA)){
 					// Stop Leibniz calculation
-					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-					xEventGroupSetBits(evStartStopEvents, EV_STOP_LEIBNIZ);
-					Bits = xEventGroupGetBits(evStartStopEvents);
+					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);			//Clear all Bits from Event
+					xEventGroupSetBits(evStartStopEvents, EV_STOP_LEIBNIZ);		//Set Stopbit
+					Bits = xEventGroupGetBits(evStartStopEvents);				//Save eventbits as value
 				}
 				break;
 
 				case 4:
 				if (Bits) {
 					// Reset - set Leibniz calculation to 0
-					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-					xEventGroupSetBits(evStartStopEvents, EV_RESET_LEIBNIZ);
-					Bits = xEventGroupGetBits(evStartStopEvents);
-						sprintf(&LeibnizPiString[0], " ");
-						sprintf(&LeibnizTimeString[0], " ");
-						sprintf(&LeibnizExactTime[0], " ");
+					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);			//Clear all Bits from Event
+					xEventGroupSetBits(evStartStopEvents, EV_RESET_LEIBNIZ);	//Set Resetbit
+					Bits = xEventGroupGetBits(evStartStopEvents);				//Save eventbits as value
+						sprintf(&LeibnizPiString[0], " ");						//Write " " into String, Display clears Line
+						sprintf(&LeibnizTimeString[0], " ");					//Write " " into String, Display clears Line
+						sprintf(&LeibnizExactTime[0], " ");						//Write " " into String, Display clears Line
 				}
 				break;
 
 				case 8:
-					// Stop Leibniz calculation and switch to Nikalantha calculation
-					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-					xEventGroupSetBits(evStartStopEvents, EV_STOP_LEIBNIZ);
-					Bits = xEventGroupGetBits(evStartStopEvents);
-					Menu = 3;
-					ButtonState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+					// Stop Leibniz calculation and switch to Nilakantha calculation
+					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);			//Clear all Bits from Event
+					xEventGroupSetBits(evStartStopEvents, EV_STOP_LEIBNIZ);		//Set Stopbit
+					Bits = xEventGroupGetBits(evStartStopEvents);				//Save eventbits as value
+					Menu = 3;													//Set Menu to 3 to switch to Nilakantha
+					ButtonState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);	//Clear Buttonstate to avoid switching back imediatly
 				break;
 			}
 		}
 		
 		
 		//////////////////////////////////////////////////////////////////////////
-		//						Nikalantha's Pi functions						//
+		//						Nilakantha's Pi functions						//
 		//////////////////////////////////////////////////////////////////////////
 		
 		if (Menu == 3) {
 			switch (ButtonState) {
 				case 1:
 					if (Bits == 0){	//First start since Main screen
-						xEventGroupSetBits(evStartStopEvents, EV_START_NIKA);	//Set startbit
-						Bits = xEventGroupGetBits(evStartStopEvents);	//Save eventbits as value
+						xEventGroupSetBits(evStartStopEvents, EV_START_NILA);	//Set startbit
+						Bits = xEventGroupGetBits(evStartStopEvents);			//Save eventbits as value
 					}
 					else if (Bits & (EV_STOP_LEIBNIZ | EV_STOPPED_LEIBNIZ)){	//Start if switched from Leibniz's's Pi
-						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-						xEventGroupSetBits(evStartStopEvents, EV_START_NIKA);	//Set startbit
-						Bits = xEventGroupGetBits(evStartStopEvents);	//Save eventbits as value
-						vTaskResume(NikalanthaTask);	//Resume where stopped
+						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);		//Clear all Bits from Event
+						xEventGroupSetBits(evStartStopEvents, EV_START_NILA);	//Set startbit
+						Bits = xEventGroupGetBits(evStartStopEvents);			//Save eventbits as value
+						vTaskResume(NilakanthaTask);							//Resume where stopped
 					}
-					else if (Bits & EV_STOPPED_NIKA) {
-						// Restart Nikalantha calculation if stopped or stopped and reset
-						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-						xEventGroupSetBits(evStartStopEvents, EV_START_NIKA);
-						Bits = xEventGroupGetBits(evStartStopEvents);
-						vTaskResume(NikalanthaTask);
+					else if (Bits & EV_STOPPED_NILA) {
+						// Restart Nilakantha calculation if stopped or stopped and reset
+						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);		//Clear all Bits from Event
+						xEventGroupSetBits(evStartStopEvents, EV_START_NILA);	//Set startbit
+						Bits = xEventGroupGetBits(evStartStopEvents);			//Save eventbits as value
+						vTaskResume(NilakanthaTask);							//Resume where stopped
 					} 
-					else if (Bits & EV_RESET_NIKA) {
-						// Restart Nikalantha calculation if reseted
-						vTaskResume(NikalanthaTask);
+					else if (Bits & EV_RESET_NILA) {
+						// Restart Nilakantha calculation if reseted
+						vTaskResume(NilakanthaTask);							//Resume where stopped
 					}
 					break;
 
 				case 2:
-				if(Bits & EV_START_NIKA){
-						// Stop Nikalantha calculation
-						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-						xEventGroupSetBits(evStartStopEvents, EV_STOP_NIKA);
-						Bits = xEventGroupGetBits(evStartStopEvents);
+				if(Bits & EV_START_NILA){
+						// Stop Nilakantha calculation
+						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);		//Clear all Bits from Event
+						xEventGroupSetBits(evStartStopEvents, EV_STOP_NILA);	//Set Stopbit
+						Bits = xEventGroupGetBits(evStartStopEvents);			//Save eventbits as value
 					}
 					break;
 
 				case 4:
 					if (Bits){
-						// Reset Nikalantha calculation to 0 if reseted or stopped
-						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-						xEventGroupSetBits(evStartStopEvents, EV_RESET_NIKA);
-						Bits = xEventGroupGetBits(evStartStopEvents);
-						sprintf(&NikalanthaPiString[0], " ");
-						sprintf(&NikalanthaTimeString[0], " ");
-						sprintf(&NikalanthaExactTime[0], " ");
+						// Reset Nilakantha calculation to 0 if reseted or stopped
+						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);		//Clear all Bits from Event
+						xEventGroupSetBits(evStartStopEvents, EV_RESET_NILA);	//Set Resetbit
+						Bits = xEventGroupGetBits(evStartStopEvents);			//Save eventbits as value
+						sprintf(&NilakanthaPiString[0], " ");					//Write " " into String, Display clears Line
+						sprintf(&NilakanthaTimeString[0], " ");					//Write " " into String, Display clears Line
+						sprintf(&NilakanthaExactTime[0], " ");					//Write " " into String, Display clears Line
 					}
 					break;
 
 				case 8:
 						// Stop Nikalantha calculation and switch to Leibniz calculation
-						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-						xEventGroupSetBits(evStartStopEvents, EV_STOP_NIKA);
-						Bits = xEventGroupGetBits(evStartStopEvents);
-						Menu = 2;
-						ButtonState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);
+						xEventGroupClearBits(evStartStopEvents, EV_CLEAR);		//Clear all Bits from Event
+						xEventGroupSetBits(evStartStopEvents, EV_STOP_NILA);	//Set Stopbit
+						Bits = xEventGroupGetBits(evStartStopEvents);			//Save eventbits as value
+						Menu = 2;												//Set Menu to 2 to switch to Leibniz
+						ButtonState = xEventGroupClearBits(evButtonEvents, EVBUTTONS_CLEAR);	//Clear Buttonstate to avoid switching back imediatly
 					break;
 			}
 		}
@@ -397,16 +399,22 @@ void vButtonHandler(void* pvParamter) {
 //////////////////////////////////////////////////////////////////////////
 
 void vLeibniz(void *pvParameter){
-	(void) pvParameter;
+	(void) pvParameter; 
+	//Set Local variables
 	float32_t PI;
 	float32_t Summe;
-	xEventGroupWaitBits(evStartStopEvents, EV_START_LEIBNIZ, pdFALSE, pdTRUE, portMAX_DELAY);
+	
+	xEventGroupWaitBits(evStartStopEvents, EV_START_LEIBNIZ, pdFALSE, pdTRUE, portMAX_DELAY);	//Task waits for Eventbit to start
+	
+	//Variables to set after Task startet
 	TickType_t Starttime;
 	TickType_t Endtime; 
 	TickType_t PauseStartTime;
 	TickType_t PauseTime;
 	
-	start_here:
+	start_here:	//Startpoint after reset calculation
+	
+	//Local Variables with startvalue, 
 	PI = 0;
 	Summe = 0.0;
 	TickType_t lastExecutionTime = xTaskGetTickCount();
@@ -427,9 +435,9 @@ void vLeibniz(void *pvParameter){
 			Elapsedtime += Endtime;
 		    xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
 			Bits = xEventGroupGetBits(evStartStopEvents);
-			Bits &= (~EV_START_LEIBNIZ & ~EV_STOP_LEIBNIZ) ;  // EV_START_LEIBNIZ löschen
+			Bits &= (~EV_START_LEIBNIZ & ~EV_STOP_LEIBNIZ) ;  //delete EV_START_LEIBNIZ and EV_STOP_LEIBNIZ from eventgroup
             vTaskSuspend(NULL);
-			if (Bits & EV_RESET_LEIBNIZ){
+			if (Bits & EV_RESET_LEIBNIZ){	//Reset function
 				xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
 				xEventGroupSetBits(evStartStopEvents, EV_START_LEIBNIZ);
 				Bits = xEventGroupGetBits(evStartStopEvents);
@@ -441,17 +449,19 @@ void vLeibniz(void *pvParameter){
 			xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
             xEventGroupSetBits(evStartStopEvents, EV_STOPPED_LEIBNIZ);
 			Bits = xEventGroupGetBits(evStartStopEvents);
-			memset(LeibnizPiString, 0, sizeof(LeibnizPiString));		// Der String wird geleert.
-			memset(LeibnizTimeString, 0, sizeof(LeibnizTimeString));		// Der String wird geleert.
-			memset(LeibnizExactTime, 0, sizeof(LeibnizExactTime));		// Der String wird geleert.
+			memset(LeibnizPiString, 0, sizeof(LeibnizPiString));		//String gets emptied
+			memset(LeibnizTimeString, 0, sizeof(LeibnizTimeString));	//String gets emptied
+			memset(LeibnizExactTime, 0, sizeof(LeibnizExactTime));		//String gets emptied
 			vTaskSuspend(NULL);
 			goto start_here;
 		}
 		
+		//Leibniz algorithm
 		Summe += (i % 2 == 0 ? 1 : -1) / (2.0 * i + 1);
 		PI = 4 * Summe;
 		n ++;
 		
+		//Writes every 500ms Pi and elapsed Time into Strings
 		if (Elapsedcounter >= pdMS_TO_TICKS(500)) {
 			sprintf(&LeibnizPiString[0], "PI is %.7f", PI);
 			sprintf(&LeibnizTimeString[0], "%ds", (elapsedSeconds / 2));
@@ -459,7 +469,7 @@ void vLeibniz(void *pvParameter){
 			elapsedSeconds ++;
 		}
 		
-
+		//Writes exact Time into String when Pi has reached 5 digits precise, can only happen once trough Codeblock
 		if(Codeblocker == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){		
 			Endtime = xTaskGetTickCount() - Starttime;
 			Elapsedtime += Endtime;
@@ -474,17 +484,21 @@ void vLeibniz(void *pvParameter){
 //						Nilakantha calculation							//
 //////////////////////////////////////////////////////////////////////////
 
-void vNikalantha(void *pvParameter){
+void vNilakantha(void *pvParameter){
 	(void) pvParameter;
+	//Set Local variables
 	TickType_t Starttime;
 	TickType_t Endtime;
 	double Zaehler;
-	xEventGroupWaitBits(evStartStopEvents, EV_START_NIKA, pdFALSE, pdTRUE, portMAX_DELAY);
+	
+	xEventGroupWaitBits(evStartStopEvents, EV_START_NILA, pdFALSE, pdTRUE, portMAX_DELAY);	//Task waits for Eventbit to start
+	
     while (1) {
-
-        start_here:
+        start_here:	//Startpoint after reset calculation
 		xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-        Bits = xEventGroupSetBits(evStartStopEvents, EV_START_NIKA);
+        Bits = xEventGroupSetBits(evStartStopEvents, EV_START_NILA);
+		
+		//Local Variables with startvalue, 
 		int Elapsedtime = 0;
         float32_t PI = 0;
 		TickType_t lastExecutionTime = xTaskGetTickCount();
@@ -496,8 +510,9 @@ void vNikalantha(void *pvParameter){
 		int codeblock = 0;
 		Zaehler = -1;
 		Starttime  = xTaskGetTickCount();
+		
         if (i == 0) {
-            // Startwert PI = 3
+            //First calculation
             PI = 3;
             Zaehler *= -1;
             PI = PI + (Zaehler * 4 / (n * (n + 1) * (n + 2)));
@@ -508,38 +523,41 @@ void vNikalantha(void *pvParameter){
         for (i = 1; i < n; i++) {
 			currentTime = xTaskGetTickCount();
 			Elapsedcounter = currentTime - lastExecutionTime;
-            if (Bits & EV_STOP_NIKA) {
+            if (Bits & EV_STOP_NILA) { //Stop function
 				xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-                xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NIKA);
+                xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NILA);
 				Bits = xEventGroupGetBits(evStartStopEvents);
                 vTaskSuspend(NULL);
             }
-            if (Bits & EV_RESET_NIKA) {
+            if (Bits & EV_RESET_NILA) {	//Reset function
 				xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
-                xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NIKA);
-				memset(NikalanthaPiString, 0, sizeof(NikalanthaPiString));			// Der String wird geleert.
-				memset(NikalanthaTimeString, 0, sizeof(NikalanthaTimeString));		// Der String wird geleert.
-				memset(NikalanthaExactTime, 0, sizeof(NikalanthaExactTime));		// Der String wird geleert.
+                xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NILA);
+				memset(NilakanthaPiString, 0, sizeof(NilakanthaPiString));			//String gets emptied
+				memset(NilakanthaTimeString, 0, sizeof(NilakanthaTimeString));		//String gets emptied
+				memset(NilakanthaExactTime, 0, sizeof(NilakanthaExactTime));		//String gets emptied
 				Bits = xEventGroupGetBits(evStartStopEvents);
 				vTaskSuspend(NULL);
                 goto start_here;
             }
 			
+			//Nilakantha Algorithm
 			Zaehler *= -1;	
 			PI += (Zaehler * 4 / (n * (n + 1) * (n + 2)));
 			n += 2;
-			
+	
+			//Writes every 500ms Pi and elapsed Time into Strings			
 			if (Elapsedcounter >= pdMS_TO_TICKS(500)) {
-				sprintf(&NikalanthaPiString[0], "PI is %.7f", PI);
-				sprintf(&NikalanthaTimeString[0], "%ds", (elapsedSeconds / 2));
+				sprintf(&NilakanthaPiString[0], "PI is %.7f", PI);
+				sprintf(&NilakanthaTimeString[0], "%ds", (elapsedSeconds / 2));
 				lastExecutionTime = currentTime;
 				elapsedSeconds ++;
 			}
 			
+			//Writes exact Time into String when Pi has reached 5 digits precise, can only happen once trough Codeblock
 			if(codeblock == 0 && (uint32_t)((PI*100000) > 314159 && (PI*100000) < 314160)){
 				Endtime = xTaskGetTickCount() - Starttime;
 				Elapsedtime += Endtime;
-				sprintf(&NikalanthaExactTime[0], "Pi in %dms", Elapsedtime);
+				sprintf(&NilakanthaExactTime[0], "Pi in %dms", Elapsedtime);
 				codeblock = 1;
 			}
 		}
