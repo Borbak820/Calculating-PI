@@ -185,14 +185,15 @@ void vUserInterface(void* pvParameters){
 				vDisplayWriteStringAtPos(3,0, "4: Back");
 			}
 			if(Menu == Menu_Leibniz){	//Leibniz's Pi screen
-				vDisplayClear();
-				if ((Bits == 0) | (Bits != EV_START_LEIBNIZ) | (Bits != EV_STOPPED_LEIBNIZ)){
+				if ((Bits == 0) | (Bits == EV_RESET_LEIBNIZ)){
+					vDisplayClear();
 					vDisplayWriteStringAtPos(1,0, "1: Start");
 					vDisplayWriteStringAtPos(2,0, "2: Stop");
 					vDisplayWriteStringAtPos(2,10, "3: Reset");
 					vDisplayWriteStringAtPos(3,0, "4: ~ Nilakantha");
 				}
 				if (Bits == EV_START_LEIBNIZ){
+					vDisplayClear();
 					vDisplayWriteStringAtPos(1,0, "1: Start");
 					vDisplayWriteStringAtPos(2,0, "2: Stop");
 					vDisplayWriteStringAtPos(2,10, "3: Reset");
@@ -205,7 +206,8 @@ void vUserInterface(void* pvParameters){
 					vDisplayWriteStringAtPos(0,16, "%s", LeibnizTimeString);
 					vDisplayWriteStringAtPos(1,9, "%s", LeibnizExactTime);
 				}
-				if ((Bits == EV_STOPPED_LEIBNIZ) | (Bits == EV_STOP_NILA)){
+				if ((Bits == EV_STOPPED_LEIBNIZ) | (Bits == EV_STOPPED_NILA) | (Bits == EV_STOP_NILA)){
+					vDisplayClear();
 					vDisplayWriteStringAtPos(1,0, "1: Start");
 					vDisplayWriteStringAtPos(2,0, "2: Stop");
 					vDisplayWriteStringAtPos(2,10, "3: Reset");
@@ -216,7 +218,7 @@ void vUserInterface(void* pvParameters){
 				}
 			}
 			if(Menu == Menu_Nilakantha){	//Nilakantha's Pi screen
-				if ((Bits == 0) | (Bits != EV_START_NILA) | (Bits != EV_STOPPED_NILA)){
+				if ((Bits == 0) | (Bits == EV_RESET_NILA)){
 					vDisplayClear();
 					vDisplayWriteStringAtPos(1,0, "1: Start");
 					vDisplayWriteStringAtPos(2,0, "2: Stop");
@@ -224,6 +226,7 @@ void vUserInterface(void* pvParameters){
 					vDisplayWriteStringAtPos(3,0, "4: ~ Leibniz");
 				}
 				if (Bits == EV_START_NILA){
+					vDisplayClear();
 					vDisplayWriteStringAtPos(1,0, "1: Start");
 					vDisplayWriteStringAtPos(2,0, "2: Stop");
 					vDisplayWriteStringAtPos(2,10, "3: Reset");
@@ -232,12 +235,12 @@ void vUserInterface(void* pvParameters){
 					checkEvent = xEventGroupGetBits(evREADWRITE);
 					xEventGroupWaitBits(evREADWRITE,EV_READ_FROM_NILASTRING,pdTRUE,pdTRUE,portMAX_DELAY);
 					checkEvent = xEventGroupGetBits(evREADWRITE);
-					vDisplayClear();
 					vDisplayWriteStringAtPos(0,0, "%s", NilakanthaPiString);
 					vDisplayWriteStringAtPos(0,16, "%s", NilakanthaTimeString);
 					vDisplayWriteStringAtPos(1,9, "%s", NilakanthaExactTime);
 				}
-				if ((Bits == EV_STOPPED_NILA) | (Bits == EV_STOPPED_LEIBNIZ)){
+				if ((Bits == EV_STOPPED_NILA) | (Bits == EV_STOPPED_LEIBNIZ) | (Bits == EV_STOP_LEIBNIZ)){
+					vDisplayClear();
 					vDisplayWriteStringAtPos(1,0, "1: Start");
 					vDisplayWriteStringAtPos(2,0, "2: Stop");
 					vDisplayWriteStringAtPos(2,10, "3: Reset");
