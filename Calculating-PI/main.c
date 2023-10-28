@@ -591,6 +591,12 @@ void vNilakantha(void *pvParameter){
 				xEventGroupSetBits(evStartStopEvents, EV_STOPPED_NILA);
 				AlgorithmBits = xEventGroupGetBits(evStartStopEvents);
 				vTaskSuspend(NULL);
+				if (AlgorithmBits & EV_RESET_NILA){	//Reset function
+					xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
+					xEventGroupSetBits(evStartStopEvents, EV_START_NILA);
+					AlgorithmBits = xEventGroupGetBits(evStartStopEvents);
+					goto start_here;
+				}
 			}
 			if (AlgorithmBits & EV_RESET_NILA) {	//Reset function
 				xEventGroupClearBits(evStartStopEvents, EV_CLEAR);
